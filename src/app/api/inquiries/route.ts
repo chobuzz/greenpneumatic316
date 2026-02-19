@@ -56,8 +56,18 @@ ${newInquiry.message}
             `
         })
 
-        // 2. Google Sheets Sync
-        await syncToGoogleSheet('inquiry', newInquiry)
+        // 2. Google Sheets Sync (GAS Legacy 경로: data.name, data.phone 등 영문 키로 접근)
+        const sheetData = {
+            name: newInquiry.name,
+            company: newInquiry.company || "-",
+            phone: newInquiry.phone,
+            email: newInquiry.email,
+            subject: newInquiry.subject,
+            message: newInquiry.message,
+            마케팅동의: newInquiry.marketingConsent ? "Y" : "N",
+            id: newInquiry.id
+        }
+        await syncToGoogleSheet('inquiry', sheetData)
 
         return NextResponse.json(newInquiry)
     } catch (error) {

@@ -98,30 +98,42 @@ export function ContactForm() {
                                 <form onSubmit={handleSubmit} className="space-y-8">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-3">
-                                            <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Customer Name</label>
+                                            <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">담당자 성함</label>
                                             <Input required name="name" placeholder="성함을 입력하세요" className="h-16 rounded-2xl bg-slate-50 border-slate-100 focus:bg-white focus:border-primary/50 transition-all text-slate-900 font-bold px-6" />
                                         </div>
                                         <div className="space-y-3">
-                                            <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Company / Organization</label>
+                                            <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">회사/기관명</label>
                                             <Input required name="company" placeholder="업체명을 입력하세요" className="h-16 rounded-2xl bg-slate-50 border-slate-100 focus:bg-white focus:border-primary/50 transition-all text-slate-900 font-bold px-6" />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-3">
-                                            <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Contact Phone</label>
+                                            <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">연락처</label>
                                             <Input required name="phone" placeholder="연락처를 입력하세요" className="h-16 rounded-2xl bg-slate-50 border-slate-100 focus:bg-white focus:border-primary/50 transition-all text-slate-900 font-bold px-6" />
                                         </div>
                                         <div className="space-y-3">
-                                            <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Business Email</label>
+                                            <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">이메일</label>
                                             <Input required type="email" name="email" placeholder="이메일을 입력하세요" className="h-16 rounded-2xl bg-slate-50 border-slate-100 focus:bg-white focus:border-primary/50 transition-all text-slate-900 font-bold px-6" />
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Inquiry Details</label>
-                                        <Textarea required name="message" placeholder="필요하신 솔루션이나 궁금하신 점을 상세히 남겨주세요." className="min-h-[180px] rounded-2xl bg-slate-50 border-slate-100 focus:bg-white focus:border-primary/50 transition-all text-slate-900 font-bold px-6 py-5 resize-none" />
+                                        <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-1">문의내용</label>
+                                        <Textarea required name="message" placeholder="문의사항을 남겨주세요." className="min-h-[180px] rounded-2xl bg-slate-50 border-slate-100 focus:bg-white focus:border-primary/50 transition-all text-slate-900 font-bold px-6 py-5 resize-none" />
+                                    </div>
+                                    <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                        <input
+                                            required
+                                            type="checkbox"
+                                            name="marketingConsent"
+                                            id="marketingConsent"
+                                            className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                                        />
+                                        <label htmlFor="marketingConsent" className="text-sm text-slate-600 font-medium leading-relaxed cursor-pointer select-none">
+                                            (필수) 그린뉴메틱 이메일 수신에 동의합니다.
+                                        </label>
                                     </div>
                                     <Button type="submit" className="w-full h-20 rounded-2xl text-xl font-black bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/20 transition-all" disabled={status === "loading"}>
-                                        {status === "loading" ? "전송 처리 중..." : "최적의 솔루션 받기"}
+                                        {status === "loading" ? "전송 처리 중..." : "문의하기"}
                                     </Button>
                                 </form>
                             )}

@@ -32,6 +32,7 @@ export interface Inquiry {
     email: string;
     subject: string;
     message: string;
+    marketingConsent: boolean;
 }
 
 export interface BusinessUnit {
@@ -67,6 +68,7 @@ export interface Quotation {
     quantity: number;
     totalPrice: number;
     unitName: string;
+    marketingConsent: boolean;
 }
 
 export interface Insight {

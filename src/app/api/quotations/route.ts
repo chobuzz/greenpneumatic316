@@ -111,18 +111,19 @@ export async function POST(req: Request) {
             })
         }
 
-        // 3. Google Sheets Sync (Map to requested headers & keep original keys for GAS compatibility)
+        // 3. Google Sheets Sync (GAS Legacy 경로: data.customerName, data.phone 등 영문 키로 접근)
         const sheetData = {
-            ...newQuotation, // Original English keys (id, customerName, etc.)
-            "발생일시": newQuotation.createdAt,
-            "고객명": newQuotation.customerName,
-            "업체명": newQuotation.company,
-            "연락처": newQuotation.phone,
-            "이메일": newQuotation.email,
-            "상품명": newQuotation.productName,
-            "모델명": newQuotation.modelName,
-            "수량": newQuotation.quantity,
-            "총금액": newQuotation.totalPrice
+            customerName: newQuotation.customerName,
+            company: newQuotation.company || "-",
+            phone: newQuotation.phone,
+            email: newQuotation.email,
+            productName: newQuotation.productName,
+            modelName: newQuotation.modelName,
+            quantity: newQuotation.quantity,
+            totalPrice: newQuotation.totalPrice,
+            unitName: newQuotation.unitName,
+            마케팅동의: newQuotation.marketingConsent ? "Y" : "N",
+            id: newQuotation.id
         }
         await syncToGoogleSheet('quotation', sheetData)
 

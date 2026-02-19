@@ -23,7 +23,8 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
         name: "",
         company: "",
         phone: "",
-        email: ""
+        email: "",
+        marketingConsent: false
     })
     const [isGenerating, setIsGenerating] = useState(false)
     const [previewImage, setPreviewImage] = useState<string | null>(null)
@@ -81,7 +82,8 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
                     quantity: quantity,
                     totalPrice: totalPrice,
                     unitName: unitName,
-                    pdfBase64: pdfBase64
+                    pdfBase64: pdfBase64,
+                    marketingConsent: userInfo.marketingConsent
                 })
             });
 
@@ -159,9 +161,9 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
                             <div className="space-y-5">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-500 ml-1 uppercase">수신자 성함 *</label>
+                                        <label className="text-[10px] font-black text-slate-500 ml-1 uppercase">담당자 성함 *</label>
                                         <Input
-                                            placeholder="예: 홍길동"
+                                            placeholder="성함을 입력하세요"
                                             className="h-12 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all"
                                             value={userInfo.name}
                                             onChange={e => setUserInfo({ ...userInfo, name: e.target.value })}
@@ -170,7 +172,7 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-slate-500 ml-1 uppercase">회사/기관명 *</label>
                                         <Input
-                                            placeholder="예: 그린뉴메틱"
+                                            placeholder="회사/기관명을 입력하세요"
                                             className="h-12 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all"
                                             value={userInfo.company}
                                             onChange={e => setUserInfo({ ...userInfo, company: e.target.value })}
@@ -181,7 +183,7 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-slate-500 ml-1 uppercase">연락처 *</label>
                                         <Input
-                                            placeholder="010-0000-0000"
+                                            placeholder="연락처를 입력하세요"
                                             className="h-12 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all"
                                             value={userInfo.phone}
                                             onChange={e => setUserInfo({ ...userInfo, phone: e.target.value })}
@@ -190,7 +192,7 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-slate-500 ml-1 uppercase">이메일 *</label>
                                         <Input
-                                            placeholder="mail@example.com"
+                                            placeholder="이메일을 입력하세요"
                                             className="h-12 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all"
                                             type="email"
                                             value={userInfo.email}
@@ -198,11 +200,25 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
                                         />
                                     </div>
                                 </div>
+
+                                <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <input
+                                        required
+                                        type="checkbox"
+                                        id="modalMarketingConsent"
+                                        checked={userInfo.marketingConsent}
+                                        onChange={e => setUserInfo({ ...userInfo, marketingConsent: e.target.checked })}
+                                        className="mt-1 h-4 w-4 rounded border-slate-300 text-[#10b981] focus:ring-[#10b981] cursor-pointer"
+                                    />
+                                    <label htmlFor="modalMarketingConsent" className="text-[13px] text-slate-600 font-medium leading-relaxed cursor-pointer select-none">
+                                        (필수) 그린뉴메틱 이메일 수신에 동의합니다.
+                                    </label>
+                                </div>
                             </div>
 
                             <Button
                                 className="w-full h-14 text-base font-black rounded-2xl bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-100"
-                                disabled={!userInfo.name || !userInfo.company || !userInfo.phone || !userInfo.email || isGenerating}
+                                disabled={!userInfo.name || !userInfo.company || !userInfo.phone || !userInfo.email || !userInfo.marketingConsent || isGenerating}
                                 onClick={handleGenerateAndSend}
                             >
                                 {isGenerating ? (
@@ -322,18 +338,30 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
                                             <span style={{ color: '#94a3b8', minWidth: '55px', fontWeight: 700 }}>전 화</span>
                                             <span style={{ color: '#475569' }}>010-7392-9809</span>
                                         </p>
-                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', position: 'relative' }}>
+                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                             <span style={{ color: '#94a3b8', minWidth: '55px', fontWeight: 700 }}>대표자</span>
                                             <span style={{ color: '#0f172a', fontWeight: 800 }}>
                                                 정 성 희
-                                                <span style={{ marginLeft: '65px', fontWeight: 400, color: '#94a3b8' }}>(인)</span>
+                                                <span style={{ position: 'relative', marginLeft: '8px', fontWeight: 400, color: '#94a3b8', display: 'inline-block' }}>
+                                                    (인)
+                                                    {/* 도장 이미지를 (인) 글자와 겹치게 배치 */}
+                                                    <img
+                                                        src="/uploads/quotation-images/GN_도장.png"
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: '60%',
+                                                            left: '50%',
+                                                            transform: 'translate(-50%, -50%)',
+                                                            width: '100px',
+                                                            height: 'auto',
+                                                            objectFit: 'contain',
+                                                            opacity: 0.9,
+                                                            zIndex: 10
+                                                        }}
+                                                        alt="직인"
+                                                    />
+                                                </span>
                                             </span>
-                                            {/* 도장 이미지를 대표자 성함과 인(印) 사이에 위치시키되 겹치지 않게 조정 */}
-                                            <img
-                                                src="/uploads/quotation-images/GN_도장.png"
-                                                style={{ position: 'absolute', left: '0px', top: '0px', width: '55px', height: '55px', objectFit: 'contain', opacity: 0.9 }}
-                                                alt="직인"
-                                            />
                                         </div>
                                     </div>
                                 </div>

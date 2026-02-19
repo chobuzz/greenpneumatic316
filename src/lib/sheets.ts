@@ -19,6 +19,13 @@ export async function syncToGoogleSheet(
 
     console.log(`📡 [Sheets] ${type} (${action}) 작업 시작...`)
 
+    // quotation/inquiry는 GAS Legacy 경로(appendRow)를 통해 정확한 컬럼에 저장
+    // action을 포함하면 handleCrudAction으로 이동해 헤더 매핑이 꼬이므로 제외
+    const isLegacyType = type === 'quotation' || type === 'inquiry'
+    const body = isLegacyType
+        ? JSON.stringify({ type, data })
+        : JSON.stringify({ action, type, data })
+
     try {
         const response = await fetch(scriptUrl, {
             method: "POST",
@@ -26,11 +33,7 @@ export async function syncToGoogleSheet(
                 "Content-Type": "application/json",
                 "User-Agent": "Mozilla/5.0 (compatible; GreenPneumaticBot/1.0)"
             },
-            body: JSON.stringify({
-                action,
-                type,
-                data
-            }),
+            body,
             redirect: 'follow'
         })
 
@@ -52,6 +55,41 @@ export async function syncToGoogleSheet(
 /**
  * Google Spreadsheet Data Retrieval Utility
  */
+
+// GAS 스프레드시트는 한글 헤더로 저장되므로, 어드민 UI(영문 키)와 매핑 필요
+function mapKoreanToEnglish(type: SheetEntityType, row: any): any {
+    if (type === 'quotation') {
+        return {
+            id: row["ID"] || row["id"] || "",
+            createdAt: row["발생일시"] || row["createdAt"] || "",
+            customerName: row["고객명"] || row["customerName"] || "",
+            company: row["업체명"] || row["company"] || "-",
+            phone: row["연락처"] || row["phone"] || "",
+            email: row["이메일"] || row["email"] || "",
+            productName: row["상품명"] || row["productName"] || "",
+            modelName: row["모델명"] || row["modelName"] || "",
+            quantity: row["수량"] || row["quantity"] || 0,
+            totalPrice: row["총금액"] || row["totalPrice"] || 0,
+            unitName: row["사업부"] || row["unitName"] || "",
+            marketingConsent: (row["마케팅동의"] || row["marketingConsent"]) === "Y",
+        }
+    }
+    if (type === 'inquiry') {
+        return {
+            id: row["ID"] || row["id"] || "",
+            createdAt: row["발생일시"] || row["createdAt"] || "",
+            name: row["성함"] || row["name"] || "",
+            company: row["업체명"] || row["company"] || "-",
+            phone: row["연락처"] || row["phone"] || "",
+            email: row["이메일"] || row["email"] || "",
+            subject: row["문의구분"] || row["subject"] || "",
+            message: row["상세내용"] || row["message"] || "",
+            marketingConsent: (row["마케팅동의"] || row["marketingConsent"]) === "Y",
+        }
+    }
+    return row
+}
+
 export async function fetchFromGoogleSheet(type: SheetEntityType) {
     const scriptUrl = process.env.GOOGLE_SCRIPT_URL
 
@@ -84,6 +122,11 @@ export async function fetchFromGoogleSheet(type: SheetEntityType) {
                 ...data[0],
                 isAd: data[0].isAd === true || data[0].isAd === "TRUE" || data[0].isAd === "true"
             };
+        }
+
+        // quotation / inquiry: 한글 헤더 → 영문 키 변환
+        if ((type === 'quotation' || type === 'inquiry') && Array.isArray(data)) {
+            return data.map(row => mapKoreanToEnglish(type, row))
         }
 
         return Array.isArray(data) ? data : []

@@ -11,35 +11,41 @@ export async function syncToGoogleSheet(type: 'quotation' | 'inquiry' | 'custome
         return { success: false, error: "Missing script URL" }
     }
 
-    console.log(`📡 [Spreadsheet] ${type} 데이터 전송 시작... URL: ${scriptUrl.substring(0, 30)}...`)
+    console.log(`📡 [Sheets] ${type} 데이터 전송 시작... URL: ${scriptUrl.substring(0, 40)}...`)
 
     try {
         const response = await fetch(scriptUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (compatible; GreenPneumaticBot/1.0; +https://greenpneumatic.com)"
             },
             body: JSON.stringify({
                 type,
                 timestamp: new Date().toISOString(),
                 ...data
             }),
-            // Google Apps Script는 리다이렉션을 사용하므로 follow가 필요함 (기본값이지만 명시)
             redirect: 'follow'
         })
+
+        if (!response.ok) {
+            const statusText = response.statusText;
+            console.error(`❌ [Sheets] HTTP 오류! 상태: ${response.status} ${statusText}`)
+            return { success: false, error: `HTTP ${response.status} ${statusText}` }
+        }
 
         const result = await response.json()
 
         if (result.result === "success") {
-            console.log(`✅ [Spreadsheet] ${type} 저장 성공!`)
+            console.log(`✅ [Sheets] ${type} 저장 성공!`)
             return { success: true }
         } else {
-            console.error(`❌ [Spreadsheet] 저장 실패:`, result.message)
+            console.error(`❌ [Sheets] GAS 오류:`, result.message)
             return { success: false, error: result.message }
         }
-    } catch (error) {
-        console.error("❌ [Spreadsheet] 통신 오류:", error)
-        return { success: false, error: error instanceof Error ? error.message : "Network error" }
+    } catch (error: any) {
+        console.error("❌ [Sheets] 통신 치명적 오류:", error)
+        return { success: false, error: error?.message || "Unknown communication error" }
     }
 }
 
@@ -50,33 +56,34 @@ export async function fetchFromGoogleSheet(type: 'quotation' | 'inquiry' | 'cust
     const scriptUrl = process.env.GOOGLE_SCRIPT_URL
 
     if (!scriptUrl || scriptUrl === "your-script-url-here") {
-        console.warn("⚠️ [Spreadsheet] GOOGLE_SCRIPT_URL이 설정되지 않았습니다.")
+        console.error("❌ [Sheets] GOOGLE_SCRIPT_URL이 설정되지 않았습니다.")
         return []
     }
 
-    console.log(`📡 [Spreadsheet] ${type} 데이터 로드 시작... URL: ${scriptUrl.substring(0, 30)}...`)
+    console.log(`📡 [Sheets] ${type} 데이터 로드 시작... URL: ${scriptUrl.substring(0, 40)}...`)
 
     try {
         const response = await fetch(`${scriptUrl}?type=${type}`, {
             method: "GET",
             headers: {
                 "Accept": "application/json",
+                "User-Agent": "Mozilla/5.0 (compatible; GreenPneumaticBot/1.0; +https://greenpneumatic.com)"
             },
-            cache: 'no-store', // 실시간 데이터 조회를 위해 캐시 비활성화
-            redirect: 'follow' // Google Apps Script 리다이렉트 대응
+            cache: 'no-store',
+            redirect: 'follow'
         })
 
         if (!response.ok) {
-            console.error(`❌ [Spreadsheet] HTTP 오류! 상태코드: ${response.status}`)
+            console.error(`❌ [Sheets] HTTP 오류! 상태코드: ${response.status} (Type: ${type})`)
             return []
         }
 
         const data = await response.json()
-        console.log(`✅ [Spreadsheet] ${type} 로드 완료 (${Array.isArray(data) ? data.length : 0}건)`)
+        console.log(`✅ [Sheets] ${type} 로드 완료 (${Array.isArray(data) ? data.length : 0}건)`)
         return Array.isArray(data) ? data : []
-    } catch (error) {
-        console.error(`❌ [Spreadsheet] 데이터 로드 실패 (${type}):`, error)
-        throw error // 에러를 상위로 던져서 API가 500 에러를 반환하게 함
+    } catch (error: any) {
+        console.error(`❌ [Sheets] 데이터 로드 실패 (${type}):`, error?.message || error)
+        throw error
     }
 }
 

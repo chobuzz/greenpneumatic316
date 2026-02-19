@@ -57,6 +57,9 @@ export default function AdminLayout({
                         <Link href="/admin/email-settings" className="p-2 hover:bg-slate-800 rounded block text-sm">
                             이메일/자동화 설정
                         </Link>
+                        <Link href="/admin/diagnostics" className="p-2 hover:bg-indigo-600/50 bg-indigo-600/10 border border-indigo-500/20 rounded block text-sm text-indigo-300 font-bold mt-4">
+                            ⚙️ 시스템 연동 진단
+                        </Link>
                     </div>
 
                     <div className="pt-8 mt-auto">

@@ -1,0 +1,160 @@
+# 구글 스프레드시트 연동 가이드 - 버전 4.0 (전체 CRUD 지원)
+
+아래 코드를 복사하여 기존 Google Apps Script 코드를 전체 교체해 주세요. 이제 모든 데이터를 시트에서 관리할 수 있습니다.
+
+---
+
+### 단계 1: 구글 Apps Script 코드 교체 (v4.0)
+
+```javascript
+/**
+ * Green Pneumatic 통합 데이터베이스 엔진 (GAS v4.0)
+ * 지원: 사업부, 카테고리, 상품관리, 인사이트, 이메일설정, 견적/문의
+ */
+
+// 1. 데이터 저장 및 수정 (POST/PUT 방식 통합 대응)
+function doPost(e) {
+  try {
+    var payload = JSON.parse(e.postData.contents);
+    var action = payload.action; // 'create', 'update', 'delete', 'sync'
+    var type = payload.type;     // 'businessUnit', 'category', 'product', 'insight', 'emailSettings', 'quotation', 'inquiry'
+    var data = payload.data;
+    
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = getOrCreateSheet(ss, type);
+    
+    if (action === 'sync') {
+      // 마이그레이션 전용: 시트를 초기화하고 데이터를 덮어씌움
+      sheet.clear();
+      if (data && data.length > 0) {
+        var headers = Object.keys(data[0]);
+        sheet.appendRow(headers);
+        data.forEach(function(item) {
+          var row = headers.map(function(h) { return item[h] || ""; });
+          sheet.appendRow(row);
+        });
+      }
+      return jsonResponse({result: "success", message: "Synced " + data.length + " items"});
+    }
+
+    if (type === 'emailSettings') {
+        // 이메일 설정은 항상 첫 번째 줄만 사용
+        sheet.clearContents();
+        var headers = Object.keys(data);
+        sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+        var values = headers.map(function(h) { return data[h] || ""; });
+        sheet.getRange(2, 1, 1, values.length).setValues([values]);
+        return jsonResponse({result: "success"});
+    }
+
+    if (action === 'delete') {
+      var id = data.id;
+      var rows = sheet.getDataRange().getValues();
+      for (var i = 1; i < rows.length; i++) {
+        if (rows[i][0] == id) { // ID는 항상 첫 번째 컬럼(A)이라고 가정
+          sheet.deleteRow(i + 1);
+          return jsonResponse({result: "success"});
+        }
+      }
+      return jsonResponse({result: "error", message: "ID not found"});
+    }
+
+    if (action === 'update') {
+      var id = data.id;
+      var rows = sheet.getDataRange().getValues();
+      var headers = rows[0];
+      for (var i = 1; i < rows.length; i++) {
+        if (rows[i][0] == id) {
+          var newRow = headers.map(function(h) { return data[h] !== undefined ? data[h] : rows[i][headers.indexOf(h)]; });
+          sheet.getRange(i + 1, 1, 1, newRow.length).setValues([newRow]);
+          return jsonResponse({result: "success"});
+        }
+      }
+      return jsonResponse({result: "error", message: "ID not found"});
+    }
+
+    // 기본: Append (Create)
+    if (sheet.getLastRow() === 0) {
+      var headers = Object.keys(data);
+      sheet.appendRow(headers);
+    }
+    var currentHeaders = sheet.getDataRange().getValues()[0];
+    var rowData = currentHeaders.map(function(h) { return data[h] !== undefined ? data[h] : ""; });
+    sheet.appendRow(rowData);
+    
+    return jsonResponse({result: "success"});
+  } catch (err) {
+    return jsonResponse({result: "error", message: err.toString()});
+  }
+}
+
+// 2. 데이터 불러오기 (GET 방식)
+function doGet(e) {
+  try {
+    var type = e.parameter.type;
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(getMapSheetName(type));
+    
+    if (!sheet || sheet.getLastRow() < 1) return jsonResponse([]);
+    
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var results = [];
+    
+    for (var i = 1; i < data.length; i++) {
+      var obj = {};
+      for (var j = 0; j < headers.length; j++) {
+        obj[headers[j]] = data[i][j];
+      }
+      results.push(obj);
+    }
+    
+    return jsonResponse(results);
+  } catch (err) {
+    return jsonResponse({error: err.toString()});
+  }
+}
+
+// 유틸리티: 시트 이름 매핑
+function getMapSheetName(type) {
+  var map = {
+    'businessUnit': '사업분야',
+    'category': '카테고리',
+    'product': '상품관리',
+    'insight': '인사이트',
+    'emailSettings': '이메일설정',
+    'quotation': '견적내역',
+    'inquiry': '상담문의',
+    'customers': '고객관리'
+  };
+  return map[type] || type;
+}
+
+// 유틸리티: 시트가 없으면 생성
+function getOrCreateSheet(ss, type) {
+  var name = getMapSheetName(type);
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+  }
+  return sheet;
+}
+
+// 유틸리티: JSON 응답 생성
+function jsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+```
+
+---
+
+### 단계 2: 업데이트 방법 (필수)
+1.  **Apps Script** 화면에서 기존 코드를 모두 삭제하고 위 새로운 코드를 붙여넣습니다.
+2.  **[배포] -> [새 배포]**를 누릅니다. (반드시 '새 배포'여야 합니다!)
+3.  유형: **웹 앱**, 액세스: **모든 사용자(Anyone)** 유지 확인 후 배포합니다.
+4.  이미 `.env.local`에 URL이 있다면 그대로 두셔도 됩니다. (URL이 바뀌었다면 업데이트 필요)
+
+---
+
+**준비가 완료되면 다음 단계로 넘어가서 제가 코드를 수정하고 데이터를 옮겨드리겠습니다.**

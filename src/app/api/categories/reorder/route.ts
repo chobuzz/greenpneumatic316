@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { readDb, writeDb } from '@/lib/db';
+import { fetchFromGoogleSheet, syncToGoogleSheet } from '@/lib/sheets';
 
 export async function POST(request: Request) {
     try {
@@ -11,10 +11,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
         }
 
-        const db = await readDb();
+        const categories = await fetchFromGoogleSheet('category') as any[];
 
         // Update order for each category in the list
-        db.categories = db.categories.map(cat => {
+        const updatedCategories = categories.map(cat => {
             const index = orderedIds.indexOf(cat.id);
             if (index !== -1) {
                 return { ...cat, order: index };
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
             return cat;
         });
 
-        await writeDb(db);
+        await syncToGoogleSheet('category', updatedCategories, 'sync');
         return NextResponse.json({ success: true });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to reorder' }, { status: 500 });

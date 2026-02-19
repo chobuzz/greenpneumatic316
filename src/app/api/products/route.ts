@@ -1,40 +1,54 @@
 
 import { NextResponse } from 'next/server';
-import { readDb, writeDb, type Product } from '@/lib/db';
+import { fetchFromGoogleSheet, syncToGoogleSheet } from '@/lib/sheets';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET() {
-    const db = await readDb();
-    // Flatten products with unitId for convenience
-    const allProducts = db.businessUnits.flatMap((unit) =>
-        unit.products.map((p) => ({ ...p, businessUnitId: unit.id, businessUnitName: unit.name }))
-    );
-    return NextResponse.json(allProducts);
+    try {
+        const [units, products] = await Promise.all([
+            fetchFromGoogleSheet('businessUnit'),
+            fetchFromGoogleSheet('product')
+        ]) as [any[], any[]];
+
+        const allProducts = products.map((p) => {
+            const unit = units.find(u => u.id === p.businessUnitId);
+            return {
+                ...p,
+                businessUnitName: unit ? unit.name : 'Unknown',
+                // Parse JSON strings back to arrays
+                images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images || [],
+                models: typeof p.models === 'string' ? JSON.parse(p.models) : p.models || [],
+                specImages: typeof p.specImages === 'string' ? JSON.parse(p.specImages) : p.specImages || []
+            };
+        });
+        return NextResponse.json(allProducts);
+    } catch (error) {
+        return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+    }
 }
 
 export async function POST(request: Request) {
-    const body = await request.json();
-    const { businessUnitId, ...productData } = body;
+    try {
+        const body = await request.json();
+        const { businessUnitId, ...productData } = body;
 
-    if (!businessUnitId) {
-        return NextResponse.json({ error: 'Business Unit ID is required' }, { status: 400 });
+        if (!businessUnitId) {
+            return NextResponse.json({ error: 'Business Unit ID is required' }, { status: 400 });
+        }
+
+        const newProduct = {
+            id: uuidv4(),
+            ...productData,
+            businessUnitId,
+            // Stringify arrays for Sheet storage
+            images: JSON.stringify(productData.images || []),
+            models: JSON.stringify(productData.models || []),
+            specImages: JSON.stringify(productData.specImages || [])
+        };
+
+        await syncToGoogleSheet('product', newProduct, 'create');
+        return NextResponse.json(newProduct);
+    } catch (error) {
+        return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
     }
-
-    const db = await readDb();
-    const unitIndex = db.businessUnits.findIndex(u => u.id === businessUnitId);
-
-    if (unitIndex === -1) {
-        return NextResponse.json({ error: 'Business Unit not found' }, { status: 404 });
-    }
-
-    const newProduct: Product = {
-        id: uuidv4(),
-        ...productData,
-        images: productData.images || []
-    };
-
-    db.businessUnits[unitIndex].products.push(newProduct);
-    await writeDb(db);
-
-    return NextResponse.json(newProduct);
 }

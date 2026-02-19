@@ -1,0 +1,225 @@
+{
+  "businessUnits": [
+    {
+      "id": "green-science",
+      "name": "그린 사이언스",
+      "description": "실험 기기 및 연구 솔루션 제공",
+      "image": "/green_science.png",
+      "color": "bg-blue-500",
+      "products": [
+        {
+          "id": "fae71b63-4014-4e5c-af02-b8c74cf68943",
+          "name": "RV 진공펌프",
+          "description": "다용도 로터리 베인 진공 펌프",
+          "images": [
+            "https://vacuumtozero.com/web/product/big/202502/bdfe5d7d8fdae1314e260eedfad68a9d.png",
+            "https://vacuumtozero.com/web/product/extra/big/202502/0c2705412ec8d48979971a90339f7c39.png"
+          ],
+          "specifications": "",
+          "categoryId": "a388ddec-364c-4758-a0ab-c5c9867a3f89",
+          "models": [
+            {
+              "name": "RV 8",
+              "price": 8000,
+              "description": "1) 유량: 33 LPM\n2) 최대진공도: - 660 mmHg\n3) 크기: 142x94x118 mm (LWH)\n4) 무게: 2kg\n5) AC 모터\n추가) 8mm 우레탄 커넥터, 돼지코 연결"
+            },
+            {
+              "name": "RV 12",
+              "price": 12000,
+              "description": "",
+              "quotationDisabled": true
+            }
+          ],
+          "specImages": [
+            "https://vacuumtozero.com/web/upload/NNEditor/20250228/210d4926e586a6b288f67b72f34d7d8c.jpg",
+            "https://vacuumtozero.com/web/upload/NNEditor/20250228/fb9b2c4a5dc3c0c4eb384c12bdb0be03.jpg",
+            "https://vacuumtozero.com/web/upload/NNEditor/20250228/ed0493d542c77aa2188d5e4e9f74fd32.jpg"
+          ]
+        }
+      ],
+      "bannerImage": "/uploads/caa319aa-4668-44fc-9899-23d2d0565ed5.avif"
+    },
+    {
+      "id": "power-air",
+      "name": "파워에어 콤프레셔",
+      "description": "고효율 산업용 에어 콤프레샤 시스템",
+      "image": "/POWER_AIR.png",
+      "color": "bg-cyan-500",
+      "products": [],
+      "bannerImage": "/uploads/78442454-c519-460b-817d-80498ef1349f.avif"
+    },
+    {
+      "id": "vacuum-to-zero",
+      "name": "베큠투제로",
+      "description": "진공 펌프 / 수리 / 시스템 전문",
+      "image": "/vacuumtozero.png",
+      "color": "bg-indigo-500",
+      "products": [],
+      "bannerImage": "/uploads/db373646-2054-427e-81bf-d65a972ea3fc.webp"
+    },
+    {
+      "id": "tank-nara",
+      "name": "탱크나라",
+      "description": "다양한 규격의 산업용 탱크 맞춤 제작",
+      "image": "/tanknara.png",
+      "color": "bg-slate-500",
+      "products": [],
+      "bannerImage": "/uploads/1a3a869a-36fa-4182-8980-b5f71a4a12e2.jpg"
+    }
+  ],
+  "categories": [
+    {
+      "id": "a388ddec-364c-4758-a0ab-c5c9867a3f89",
+      "name": "진공펌프",
+      "businessUnitId": "green-science",
+      "icon": "🌀",
+      "order": 2
+    },
+    {
+      "id": "84ba66d5-0745-4dd0-ab13-9900f586d3b3",
+      "name": "항온 순환 수조",
+      "businessUnitId": "green-science",
+      "icon": "💧",
+      "order": 0
+    },
+    {
+      "id": "935bbf9d-0858-49f7-bdb3-711c891e67c4",
+      "name": "실험실 콤프레샤",
+      "businessUnitId": "green-science",
+      "order": 4
+    },
+    {
+      "id": "a46b7dc5-9276-4bd9-8e98-c91f59f1ca9e",
+      "name": "실험실 진공펌프",
+      "businessUnitId": "green-science",
+      "parentId": "a388ddec-364c-4758-a0ab-c5c9867a3f89",
+      "order": 1
+    },
+    {
+      "id": "cb55655b-bbcf-4f30-b7e9-e9b506ea9b19",
+      "name": "산업용 진공펌프",
+      "businessUnitId": "green-science",
+      "parentId": "a388ddec-364c-4758-a0ab-c5c9867a3f89",
+      "order": 3
+    }
+  ],
+  "emailSettings": {
+    "subject": "[그린뉴메틱] {name} 담당자님, 새해 복 많이 받으십시오. (장비 점검 및 기술지원 안내)",
+    "body": "<p>안녕하세요, <strong>{name} 담당자님.</strong></p><p>새해 복 많이 받으시고, 올 한 해도 건강과 행복이 가득하시길 진심으로 기원합니다. 항상 저희 <strong>그린뉴메틱</strong>을 믿고 이용해 주셔서 깊은 감사를 드립니다.</p><p>저희 그린뉴메틱은 <strong>실험실 및 유체 시스템 전문 기업</strong>으로서, 고객사의 안정적인 장비 운영과 최적의 연구 환경 유지를 위해 최선을 다하고 있습니다.</p><p>축적된 기술력을 바탕으로 아래와 같은 통합 솔루션을 제공합니다.</p><ul><li><strong>전문 설비:</strong> 콤프레셔, 진공 시스템, 실험 장비 및 유체 설비</li><li><strong>유지 보수:</strong> 정기 점검, 소모품 관리 및 긴급 기술 지원</li><li><strong>기술 상담:</strong> 장비 최적화 및 시스템 구축 맞춤형 컨설팅</li></ul><p>고객사의 장비 신뢰성을 높이기 위해 항상 신속하고 전문적인 서비스로 보답하겠습니다. 운영 중 궁금하신 점이나 점검이 필요하시면 언제든지 편하게 연락 부탁드립니다.</p><p>항상 고객님의 성공을 함께하는 든든한 파트너가 되겠습니다. 감사합니다.</p><p><img src=\"http://localhost:3000/uploads/email-images/1771383698626-bei9buaujkb.png\"></p><p><strong>GREEN PNEUMATIC (그린뉴메틱)</strong> <strong>조성민 대표 (Buzz Cho) / CEO</strong></p><h3>• <strong>TEL:</strong> 010-7392-9809</h3><h3>• <strong>FAX:</strong> 031-771-0368</h3><h3>• <strong>E-MAIL:</strong> greenpneumatic316@gmail.com</h3><h3>• <strong>HOME:</strong> https://greenpneumatic.com</h3><h3>• <strong>ADDR:</strong> 경기도 양평군 강상면 다래길 27</h3>",
+    "senderAddress": "경기도 양평군 강상면 다래길 27",
+    "senderPhone": "010-7392-9809",
+    "isAd": false
+  },
+  "insights": [
+    {
+      "id": "d07f9eff-c2df-46d0-8818-4fab65b95151",
+      "title": "탱크나라 쇼핑몰",
+      "description": "",
+      "image": "/uploads/f532bede-4e15-4adf-82ad-ba5912a18c52.jpg",
+      "externalUrl": "https://tanknara.com/",
+      "businessUnitId": "tank-nara",
+      "createdAt": "2026-02-17T08:47:00.817Z",
+      "order": 4
+    },
+    {
+      "id": "2c2a8838-060f-4d42-b6f0-9b99966e4525",
+      "title": "베큠투제로 쇼핑몰",
+      "description": "",
+      "image": "/uploads/6482e01d-b6ec-4b7a-a2b4-aecfeaf60c83.jpg",
+      "externalUrl": "https://vacuumtozero.com/",
+      "businessUnitId": "vacuum-to-zero",
+      "createdAt": "2026-02-17T08:46:20.531Z",
+      "order": 3
+    },
+    {
+      "id": "50a4d825-1727-4fa3-b9a5-5e55098cae42",
+      "title": "파워에어 쇼핑몰",
+      "description": "",
+      "image": "/uploads/9234e7dd-3295-4046-9a7c-1e011142f34c.jpg",
+      "externalUrl": "https://powercomp.co.kr/",
+      "businessUnitId": "power-air",
+      "createdAt": "2026-02-17T08:28:36.575Z",
+      "order": 2
+    },
+    {
+      "id": "abb09f42-be81-4360-812d-75f2426abf23",
+      "title": "그린 사이언스 쇼핑몰",
+      "description": "",
+      "image": "/uploads/fd04d482-6e75-4575-a9f0-bd9c584c3c9e.png",
+      "externalUrl": "https://greenscience316.cafe24.com/",
+      "businessUnitId": "green-science",
+      "createdAt": "2026-02-17T08:18:47.126Z",
+      "order": 1
+    },
+    {
+      "id": "ff2d46a5-e967-4081-9eda-7169f0f4cece",
+      "title": "파워에어 - 자주 묻는 질문 FAQ",
+      "description": "",
+      "image": "https://images.unsplash.com/photo-1549923746-c502d488b3ea?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=3600",
+      "externalUrl": "https://greenpneumatic.notion.site/FAQ-302f7855528b80c7b7dbc24157b486d8?source=copy_link",
+      "businessUnitId": "power-air",
+      "createdAt": "2026-02-17T08:49:34.887Z",
+      "order": 5
+    },
+    {
+      "id": "134569f1-e852-4554-bd8a-2464bea00d1d",
+      "title": "파워에어 설치 및 수리 사례",
+      "description": "",
+      "image": "/uploads/a33d5b5c-0025-4270-bba3-de0b4eabeec1.jpg",
+      "externalUrl": "https://greenpneumatic.notion.site/306f7855528b805f96dae82c2ef17732?source=copy_link",
+      "businessUnitId": "power-air",
+      "createdAt": "2026-02-17T08:51:40.822Z",
+      "order": 6
+    },
+    {
+      "id": "464e5605-d26a-4f5e-94ac-c86565939e62",
+      "title": "파워에어 카달로그",
+      "description": "",
+      "image": "https://images.unsplash.com/photo-1517770413964-df8ca61194a6?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=3600",
+      "externalUrl": "https://greenpneumatic.notion.site/302f7855528b80158073fed73b8fc2cb?source=copy_link",
+      "businessUnitId": "power-air",
+      "createdAt": "2026-02-17T08:52:25.516Z",
+      "order": 7
+    },
+    {
+      "id": "7674679e-d444-4db4-9b89-36d1ee5e7d63",
+      "title": "파워에어 영상메뉴얼",
+      "description": "",
+      "image": "https://images.unsplash.com/photo-1567443024551-f3e3cc2be870?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=3600",
+      "externalUrl": "https://www.youtube.com/watch?v=wG0ljjhUpNc",
+      "businessUnitId": "power-air",
+      "createdAt": "2026-02-17T08:53:32.066Z",
+      "order": 8
+    },
+    {
+      "id": "9fe07f3b-d44f-4039-84c0-bfbebd0c5138",
+      "title": "베큠투제로 - 진공펌프 수리",
+      "description": "",
+      "image": "https://images.unsplash.com/photo-1718824331840-399943ff5c1e?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=3600",
+      "externalUrl": "https://greenpneumatic.notion.site/304f7855528b80b98003dddaa860a16d?source=copy_link",
+      "businessUnitId": "vacuum-to-zero",
+      "createdAt": "2026-02-17T08:54:22.733Z",
+      "order": 9
+    },
+    {
+      "id": "4ef2dee8-bde9-45f2-8c61-4aeb0557d420",
+      "title": "베큠투제로 - 자주 묻는 질문 FAQ",
+      "description": "",
+      "image": "https://images.unsplash.com/photo-1549923746-c502d488b3ea?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=3600",
+      "externalUrl": "https://greenpneumatic.notion.site/FAQ-304f7855528b803f834fd780590a73f9?source=copy_link",
+      "businessUnitId": "vacuum-to-zero",
+      "createdAt": "2026-02-17T08:55:35.716Z",
+      "order": 10
+    },
+    {
+      "id": "531dea8e-774a-483b-83b3-0d7da82ff5e1",
+      "title": "그린뉴메틱 유튜브",
+      "description": "",
+      "image": "/uploads/f31dcb24-63c4-4496-a3c4-56f33848a918.png",
+      "externalUrl": "https://www.youtube.com/@%EA%B7%B8%EB%A6%B0%EB%89%B4%EB%A9%94%ED%8B%B1",
+      "businessUnitId": "",
+      "createdAt": "2026-02-18T01:52:22.221Z",
+      "order": 0
+    }
+  ]
+}

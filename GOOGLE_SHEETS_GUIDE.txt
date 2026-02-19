@@ -1,0 +1,144 @@
+
+[중요] 구글 스프레드시트 연동 - 버전 3.0 (어드민 불러오기 지원)
+기존 코드를 모두 삭제하고 아래 코드로 교체해 주세요. 이제 어드민 페이지에서 시트의 데이터를 직접 불러올 수 있습니다.
+
+---
+
+### 단계 1: 구글 Apps Script 코드 교체 (v3.0)
+
+```javascript
+// 1. 데이터 저장 (POST 방식)
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var type = data.type; 
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheetName = (type === 'quotation') ? '견적내역' : '상담문의';
+    var sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+    var timestamp = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+
+    if (sheet.getLastRow() === 0) {
+      var headers = (type === 'quotation') 
+        ? ["발생일시", "고객명", "업체명", "연락처", "이메일", "상품명", "모델명", "수량", "총금액", "사업부", "ID"]
+        : ["발생일시", "성함", "업체명", "연락처", "이메일", "문의구분", "상세내용", "ID"];
+      sheet.appendRow(headers);
+      var headerRange = sheet.getRange(1, 1, 1, headers.length);
+      headerRange.setBackground("#1e293b").setFontColor("#ffffff").setFontWeight("bold").setHorizontalAlignment("center");
+      sheet.setFrozenRows(1);
+    }
+
+    if (type === 'quotation') {
+      sheet.appendRow([timestamp, data.customerName, data.company || "-", data.phone, data.email, data.productName, data.modelName, data.quantity, data.totalPrice, data.unitName, data.id]);
+    } else {
+      sheet.appendRow([timestamp, data.name, data.company || "-", data.phone, data.email, data.subject, data.message, data.id]);
+    }
+    
+    sheet.autoResizeColumns(1, sheet.getLastColumn());
+    return ContentService.createTextOutput(JSON.stringify({"result":"success"})).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({"result":"error", "message": err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// 2. 데이터 불러오기 (GET 방식)
+function doGet(e) {
+  try {
+    var type = e.parameter.type;
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    if (type === 'customers') {
+      // 4개의 고객관리 시트에서 데이터를 합쳐서 가져옴
+      var sheetNames = ['고객관리_파워에어', '고객관리_베큠투제로', '고객관리_탱크나라', '고객관리_그린뉴메틱'];
+      var allCustomers = [];
+      
+      sheetNames.forEach(function(sName) {
+        var sheet = ss.getSheetByName(sName);
+        if (sheet) {
+          var data = sheet.getDataRange().getValues();
+          if (data.length > 1) {
+            for (var i = 1; i < data.length; i++) {
+              var row = data[i];
+              allCustomers.push({
+                source: sName.replace('고객관리_', ''),
+                name: row[2],      // 거래처명
+                businessNo: row[3], // 사업번호
+                ceo: row[6],       // 대표자
+                address: row[7],   // 사업주소
+                category: row[9],  // 종목
+                manager: row[16],  // 담당자
+                phone: row[17],    // 핸드폰 (연락처)
+                email: row[18],    // 이메일
+                id: row[0] + "_" + i // 장부번호 + 인덱스로 고유 키 생성
+              });
+            }
+          }
+        }
+      });
+      return ContentService.createTextOutput(JSON.stringify(allCustomers)).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var sheetName = (type === 'quotation') ? '견적내역' : '상담문의';
+    var sheet = ss.getSheetByName(sheetName);
+    
+    // 시트가 아직 없는 경우 (데이터를 한 번도 안 보낸 경우) 빈 리스트 반환
+    if (!sheet) return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+    
+    var data = sheet.getDataRange().getValues();
+    // 헤더만 있는 경우
+    if (data.length <= 1) return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+
+    var headers = data[0];
+    var results = [];
+    
+    // 데이터 파싱
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var obj = {};
+      
+      if (type === 'quotation') {
+        obj = {
+          createdAt: row[0],
+          customerName: row[1],
+          company: row[2],
+          phone: row[3],
+          email: row[4],
+          productName: row[5],
+          modelName: row[6],
+          quantity: row[7],
+          totalPrice: row[8],
+          unitName: row[9],
+          id: row[10]
+        };
+      } else {
+        obj = {
+          createdAt: row[0],
+          name: row[1],
+          company: row[2],
+          phone: row[3],
+          email: row[4],
+          subject: row[5],
+          message: row[6],
+          id: row[7]
+        };
+      }
+      results.push(obj);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(results))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+```
+
+---
+
+### 단계 2: 업데이트 방법 (필수)
+1.  Apps Script 화면에서 기존 코드를 싹 비우고 위 코드를 붙여넣습니다.
+2.  **[배포] -> [새 배포]**를 누릅니다. (반드시 '새 배포'여야 합니다!)
+3.  유형: **웹 앱**, 액세스: **모든 사용자(Anyone)** 설정 후 배포합니다.
+4.  새로 발급된 **[웹 앱 URL]**을 복사하여 웹사이트의 `.env.local` 파일에 업데이트합니다.
+5.  개발 서버를 재시작합니다.
+
+이제 어드민 페이지에서 "데이터를 불러오는 중..." 이후에 스프레드시트에 있는 실제 내역들이 나타날 것입니다.

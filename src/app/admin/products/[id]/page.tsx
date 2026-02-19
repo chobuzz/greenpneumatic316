@@ -1,0 +1,402 @@
+
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter, useParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Upload, X, Plus, Trash2, Image as ImageIcon } from "lucide-react"
+import { ImageSelector } from "@/components/ui/image-selector"
+import type { BusinessUnit, Category, ProductModel } from "@/lib/db"
+
+export default function EditProduct() {
+    const params = useParams()
+    const router = useRouter()
+    const isNew = params.id === "new"
+
+    const [formData, setFormData] = useState({
+        name: "",
+        description: "",
+        businessUnitId: "",
+        categoryId: "",
+        images: [] as string[],
+        specifications: "",
+        specImages: [] as string[],
+        models: [] as ProductModel[]
+    })
+
+    const [units, setUnits] = useState<BusinessUnit[]>([])
+    const [categories, setCategories] = useState<Category[]>([])
+    const [loading, setLoading] = useState(!isNew)
+    const [saving, setSaving] = useState(false)
+
+    // For Spec Image Selection (Markdown insertion)
+    const [showSpecMarkdownImageSelector, setShowSpecMarkdownImageSelector] = useState(false)
+    const [tempSpecMarkdownImage, setTempSpecMarkdownImage] = useState("")
+
+    useEffect(() => {
+        Promise.all([
+            fetch("/api/business-units").then(res => res.json()),
+            fetch("/api/categories").then(res => res.json())
+        ]).then(([unitData, catData]) => {
+            setUnits(unitData)
+            setCategories(catData)
+        })
+
+        if (!isNew) {
+            fetch(`/api/products/${params.id}`)
+                .then((res) => {
+                    if (!res.ok) throw new Error("Failed");
+                    return res.json()
+                })
+                .then((data) => {
+                    // Data migration: if models are strings, convert to objects
+                    const formalModels = (data.models || []).map((m: any) =>
+                        typeof m === "string" ? { name: m, price: 0, description: "" } : m
+                    )
+
+                    setFormData({
+                        name: data.name,
+                        description: data.description,
+                        businessUnitId: data.businessUnitId || "",
+                        categoryId: data.categoryId || "",
+                        images: data.images || [],
+                        specifications: data.specifications || "",
+                        specImages: data.specImages || [],
+                        models: formalModels
+                    })
+                    setLoading(false)
+                })
+                .catch(() => {
+                    alert("상품을 찾을 수 없습니다.")
+                    router.push("/admin/products")
+                })
+        }
+    }, [params.id, isNew, router])
+
+    const removeImage = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            images: prev.images.filter((_, i) => i !== index)
+        }))
+    }
+
+    const removeSpecImage = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            specImages: prev.specImages.filter((_, i) => i !== index)
+        }))
+    }
+
+    const addModel = () => {
+        setFormData(prev => ({ ...prev, models: [...prev.models, { name: "", price: 0, description: "" }] }))
+    }
+
+    const updateModel = (index: number, field: keyof ProductModel, value: any) => {
+        const newModels = [...formData.models]
+        newModels[index] = { ...newModels[index], [field]: value }
+        setFormData(prev => ({ ...prev, models: newModels }))
+    }
+
+    const removeModel = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            models: prev.models.filter((_, i) => i !== index)
+        }))
+    }
+
+    const insertImageToSpecMarkdown = () => {
+        if (!tempSpecMarkdownImage) return;
+        const markdownImage = `\n![Image](${tempSpecMarkdownImage})\n`;
+        setFormData(prev => ({ ...prev, specifications: prev.specifications + markdownImage }));
+        setTempSpecMarkdownImage("");
+        setShowSpecMarkdownImageSelector(false);
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setSaving(true)
+
+        try {
+            const url = isNew ? "/api/products" : `/api/products/${params.id}`
+            const method = isNew ? "POST" : "PUT"
+
+            const res = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+            })
+
+            if (!res.ok) throw new Error("Failed")
+            alert(isNew ? "등록되었습니다." : "수정되었습니다.")
+            router.push("/admin/products")
+        } catch (err) {
+            alert("저장에 실패했습니다.")
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const handleDelete = async () => {
+        if (!confirm("정말 삭제하시겠습니까?")) return;
+        setSaving(true);
+        try {
+            await fetch(`/api/products/${params.id}`, { method: "DELETE" });
+            alert("삭제되었습니다.");
+            router.push("/admin/products");
+        } catch (err) {
+            alert("삭제 실패");
+            setSaving(false);
+        }
+    }
+
+    const filteredCategories = categories.filter(c => c.businessUnitId === formData.businessUnitId)
+
+    if (loading) return <div>Loading...</div>
+
+    return (
+        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow pb-24">
+            <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
+                <span className="w-1.5 h-8 bg-primary rounded-full" />
+                {isNew ? "상품 등록" : "상품 수정"}
+            </h2>
+
+            <form onSubmit={handleSubmit} className="space-y-10">
+                <section className="space-y-6">
+                    <h3 className="text-lg font-semibold border-b pb-2">기본 정보</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium mb-1.5 text-gray-700">사업 분야</label>
+                            <select
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
+                                value={formData.businessUnitId}
+                                onChange={(e) => setFormData({ ...formData, businessUnitId: e.target.value, categoryId: "" })}
+                                required
+                            >
+                                <option value="">선택하세요</option>
+                                {units.map(u => (
+                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1.5 text-gray-700">카테고리</label>
+                            <select
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
+                                value={formData.categoryId}
+                                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                                disabled={!formData.businessUnitId}
+                            >
+                                <option value="">카테고리 선택 (없음 가능)</option>
+                                {categories
+                                    .filter(c => c.businessUnitId === formData.businessUnitId && !c.parentId)
+                                    .map(parent => (
+                                        <optgroup key={parent.id} label={parent.name}>
+                                            <option value={parent.id}>{parent.name} (전체)</option>
+                                            {categories
+                                                .filter(child => child.parentId === parent.id)
+                                                .map(child => (
+                                                    <option key={child.id} value={child.id}>
+                                                        &nbsp;&nbsp;ㄴ {child.name}
+                                                    </option>
+                                                ))
+                                            }
+                                        </optgroup>
+                                    ))
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-1.5 text-gray-700">상품명</label>
+                        <Input
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            required
+                            className="text-lg font-semibold"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-1.5 text-gray-700">간략 설명</label>
+                        <Textarea
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            rows={3}
+                            required
+                            placeholder="상품 목록에 노출될 짧은 설명을 입력하세요."
+                        />
+                    </div>
+                </section>
+
+                {/* Models Section (Updated) */}
+                <section className="space-y-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-semibold">상품 모델 및 가격 관리</h3>
+                        <Button type="button" variant="outline" size="sm" onClick={addModel} className="rounded-full bg-white shadow-sm">
+                            <Plus className="h-4 w-4 mr-1.5" /> 모델 추가
+                        </Button>
+                    </div>
+
+                    <div className="space-y-4">
+                        {formData.models.map((model, i) => (
+                            <div key={i} className="bg-white p-5 rounded-xl border shadow-sm space-y-4">
+                                <div className="flex justify-between items-start gap-4">
+                                    <div className="flex-1 space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">모델명</label>
+                                                <Input
+                                                    value={model.name}
+                                                    onChange={(e) => updateModel(i, "name", e.target.value)}
+                                                    placeholder="예: RV-10"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">가격 (원)</label>
+                                                <Input
+                                                    type="number"
+                                                    value={model.price}
+                                                    onChange={(e) => updateModel(i, "price", parseInt(e.target.value) || 0)}
+                                                    placeholder="0"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">특징/옵션 설명 (견적서 기재용)</label>
+                                            <Textarea
+                                                value={model.description || ""}
+                                                onChange={(e) => updateModel(i, "description", e.target.value)}
+                                                placeholder="예: 저소음 설계&#10;강화 필터 포함&#10;2년 무상 AS"
+                                                rows={3}
+                                                className="bg-white border-slate-200 focus:bg-white transition-all text-sm leading-relaxed"
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2 pt-2">
+                                            <label className="relative flex items-center cursor-pointer group">
+                                                <input
+                                                    type="checkbox"
+                                                    className="sr-only peer"
+                                                    checked={model.quotationDisabled || false}
+                                                    onChange={(e) => updateModel(i, "quotationDisabled", e.target.checked)}
+                                                />
+                                                <div className="w-5 h-5 border-2 border-slate-300 rounded-md peer-checked:bg-red-500 peer-checked:border-red-500 transition-all flex items-center justify-center group-hover:border-slate-400">
+                                                    <div className="w-2.5 h-2.5 bg-white rounded-[2px] opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                                </div>
+                                                <span className="ml-2 text-sm font-semibold text-slate-600 group-hover:text-slate-900 transition-colors">이 모델은 온라인 견적서 발급 불가</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeModel(i)} className="text-red-400 hover:text-red-600 hover:bg-red-50 mt-6">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                        {formData.models.length === 0 && (
+                            <div className="text-center py-10 text-gray-400 border-2 border-dashed rounded-xl">
+                                등록된 모델이 없습니다. 견적 시스템을 위해 최소 1개 이상의 모델을 등록하세요.
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                <section className="space-y-6">
+                    <h3 className="text-lg font-semibold border-b pb-2">이미지 관리</h3>
+
+                    <div className="space-y-4">
+                        <label className="block text-sm font-medium text-gray-700">기본 갤러리 이미지</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {formData.images.map((url, i) => (
+                                <div key={i} className="relative aspect-square border-2 rounded-xl overflow-hidden group shadow-sm bg-slate-50">
+                                    <img src={url} alt={`Preview ${i}`} className="w-full h-full object-contain" />
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button type="button" onClick={() => removeImage(i)} className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-transform hover:scale-110">
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                    {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-primary/90 text-white text-[10px] text-center py-1 font-bold">메인</span>}
+                                </div>
+                            ))}
+                        </div>
+                        <ImageSelector
+                            label=""
+                            value=""
+                            onChange={(url) => url && setFormData(prev => ({ ...prev, images: [...prev.images, url] }))}
+                        />
+                    </div>
+
+                    <div className="space-y-4 pt-4">
+                        <label className="block text-sm font-medium text-gray-700">상세 카탈로그 이미지 (세로 나열)</label>
+                        <div className="space-y-4">
+                            {formData.specImages.map((url, i) => (
+                                <div key={i} className="relative w-full aspect-[3/1] border-2 rounded-xl overflow-hidden group shadow-sm bg-slate-50">
+                                    <img src={url} alt={`Spec ${i}`} className="w-full h-full object-contain" />
+                                    <div className="absolute top-2 right-2">
+                                        <button type="button" onClick={() => removeSpecImage(i)} className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 shadow-md">
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <ImageSelector
+                            label=""
+                            value=""
+                            onChange={(url) => url && setFormData(prev => ({ ...prev, specImages: [...prev.specImages, url] }))}
+                        />
+                    </div>
+                </section>
+
+                <section className="space-y-6">
+                    <h3 className="text-lg font-semibold border-b pb-2">기타 정보</h3>
+                    <div>
+                        <div className="flex justify-between items-center mb-4">
+                            <label className="block text-sm font-medium text-gray-700">추가 상세 설명 (Markdown)</label>
+                            <Button type="button" variant="outline" size="sm" onClick={() => setShowSpecMarkdownImageSelector(!showSpecMarkdownImageSelector)} className="rounded-full">
+                                <ImageIcon className="h-4 w-4 mr-2" /> 마크다운 이미지 삽입
+                            </Button>
+                        </div>
+
+                        {showSpecMarkdownImageSelector && (
+                            <div className="bg-blue-50/50 p-6 rounded-xl border-2 border-dashed border-blue-100 mb-6 animate-in fade-in slide-in-from-top-2">
+                                <ImageSelector label="마크다운에 삽입할 이미지 선택" value={tempSpecMarkdownImage} onChange={setTempSpecMarkdownImage} />
+                                <div className="flex gap-2 mt-4">
+                                    <Button type="button" className="flex-1 rounded-full" onClick={insertImageToSpecMarkdown} disabled={!tempSpecMarkdownImage}>코드 삽입</Button>
+                                    <Button type="button" variant="ghost" onClick={() => { setTempSpecMarkdownImage(""); setShowSpecMarkdownImageSelector(false); }}>취소</Button>
+                                </div>
+                            </div>
+                        )}
+
+                        <Textarea
+                            value={formData.specifications}
+                            onChange={(e) => setFormData({ ...formData, specifications: e.target.value })}
+                            rows={10}
+                            className="font-mono text-sm leading-loose p-6 bg-slate-900 text-slate-100 rounded-2xl shadow-inner"
+                            placeholder="추가적인 텍스트 정보가 필요한 경우 작성하세요."
+                        />
+                    </div>
+                </section>
+
+                <div className="flex gap-4 pt-10 justify-between items-center sticky bottom-0 bg-white/90 backdrop-blur-sm py-6 border-t z-20">
+                    <div className="flex gap-4">
+                        <Button type="button" variant="outline" onClick={() => router.back()} className="px-8 h-12 rounded-full font-medium">취소</Button>
+                        <Button type="submit" disabled={saving} className="px-12 h-12 rounded-full font-bold shadow-lg shadow-primary/20">
+                            {saving ? "저장 중..." : (isNew ? "상품 등록하기" : "변경사항 저장")}
+                        </Button>
+                    </div>
+                    {!isNew && (
+                        <Button type="button" variant="ghost" onClick={handleDelete} disabled={saving} className="text-red-500 hover:text-red-700 hover:bg-red-50 font-medium">
+                            상품 삭제
+                        </Button>
+                    )}
+                </div>
+            </form>
+        </div>
+    )
+}

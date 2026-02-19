@@ -7,6 +7,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, Box, Zap, Shield, Globe } from "lucide-react"
 import type { BusinessUnit } from "@/lib/db"
+import { Loading } from "@/components/ui/loading"
 
 export default function BusinessUnitsPage() {
     const [units, setUnits] = useState<BusinessUnit[]>([])
@@ -21,7 +22,7 @@ export default function BusinessUnitsPage() {
             })
     }, [])
 
-    if (loading) return null
+    if (loading) return <Loading />
 
     return (
         <div className="flex flex-col min-h-screen pt-20">

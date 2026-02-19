@@ -13,7 +13,12 @@ interface BusinessUnitMainContentProps {
 }
 
 export function BusinessUnitMainContent({ unit, unitCategories }: BusinessUnitMainContentProps) {
-    const unCategorizedProducts = unit.products.filter(p => !p.categoryId || !unitCategories.find(c => c.id === p.categoryId));
+    const unCategorizedProducts = unit.products.filter(p => {
+        const pCatIds = Array.isArray(p.categoryIds) ? p.categoryIds : ((p as any).categoryId ? [(p as any).categoryId] : []);
+        // Check if ANY of product categories belong to this BU
+        const belongsToThisBU = pCatIds.some(catId => unitCategories.some(c => c.id === catId));
+        return pCatIds.length === 0 || !belongsToThisBU;
+    });
 
     return (
         <>

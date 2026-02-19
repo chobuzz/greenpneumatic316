@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { ImageSelector } from "@/components/ui/image-selector"
+import { Loading } from "@/components/ui/loading"
 
 export default function EditBusinessUnit() {
     const params = useParams()
@@ -69,7 +70,7 @@ export default function EditBusinessUnit() {
         }
     }
 
-    if (loading) return <div>Loading...</div>
+    if (loading) return <Loading />
 
     return (
         <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow">

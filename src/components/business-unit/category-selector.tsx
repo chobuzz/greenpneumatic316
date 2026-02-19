@@ -37,14 +37,21 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
     // Filter products
     const activeProducts = unitProducts.filter(p => {
         if (!activeParentId) return false;
+
+        const pCatIds = Array.isArray(p.categoryIds) ? p.categoryIds : [];
+        const pCatId = (p as any).categoryId;
+
         if (activeChildId) {
-            return p.categoryId === activeChildId;
+            // Match specific child category
+            return pCatIds.includes(activeChildId) || pCatId === activeChildId;
         } else {
-            // If parent is selected, show all products belonging to this parent or ANY of its children
-            const childIds = activeChildren.map(c => c.id);
-            return p.categoryId === activeParentId || childIds.includes(p.categoryId || "");
+            // Match any category that belongs to this parent
+            const childIds = categories.filter(c => c.parentId === activeParentId).map(c => c.id);
+            const targetIds = [activeParentId, ...childIds];
+
+            return pCatIds.some(id => targetIds.includes(id)) || targetIds.includes(pCatId);
         }
-    });
+    })
 
     useEffect(() => {
         if (gridRef.current) {

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Upload, X, Plus, Trash2, Image as ImageIcon } from "lucide-react"
 import { ImageSelector } from "@/components/ui/image-selector"
 import type { BusinessUnit, Category, ProductModel } from "@/lib/db"
+import { Loading } from "@/components/ui/loading"
 
 export default function EditProduct() {
     const params = useParams()
@@ -18,8 +19,8 @@ export default function EditProduct() {
     const [formData, setFormData] = useState({
         name: "",
         description: "",
-        businessUnitId: "",
-        categoryId: "",
+        businessUnitIds: [] as string[],
+        categoryIds: [] as string[],
         images: [] as string[],
         specifications: "",
         specImages: [] as string[],
@@ -30,10 +31,6 @@ export default function EditProduct() {
     const [categories, setCategories] = useState<Category[]>([])
     const [loading, setLoading] = useState(!isNew)
     const [saving, setSaving] = useState(false)
-
-    // For Spec Image Selection (Markdown insertion)
-    const [showSpecMarkdownImageSelector, setShowSpecMarkdownImageSelector] = useState(false)
-    const [tempSpecMarkdownImage, setTempSpecMarkdownImage] = useState("")
 
     useEffect(() => {
         Promise.all([
@@ -59,8 +56,8 @@ export default function EditProduct() {
                     setFormData({
                         name: data.name,
                         description: data.description,
-                        businessUnitId: data.businessUnitId || "",
-                        categoryId: data.categoryId || "",
+                        businessUnitIds: data.businessUnitIds || (data.businessUnitId ? [data.businessUnitId] : []),
+                        categoryIds: data.categoryIds || (data.categoryId ? [data.categoryId] : []),
                         images: data.images || [],
                         specifications: data.specifications || "",
                         specImages: data.specImages || [],
@@ -74,6 +71,32 @@ export default function EditProduct() {
                 })
         }
     }, [params.id, isNew, router])
+
+    const toggleBusinessUnit = (id: string) => {
+        setFormData(prev => {
+            const newUnits = prev.businessUnitIds.includes(id)
+                ? prev.businessUnitIds.filter(v => v !== id)
+                : [...prev.businessUnitIds, id];
+
+            // Filter out categories that are no longer valid for any selected BU
+            const validUnitIds = newUnits;
+            const newCategories = prev.categoryIds.filter(catId => {
+                const cat = categories.find(c => c.id === catId);
+                return cat && validUnitIds.includes(cat.businessUnitId);
+            });
+
+            return { ...prev, businessUnitIds: newUnits, categoryIds: newCategories };
+        });
+    }
+
+    const toggleCategory = (id: string) => {
+        setFormData(prev => ({
+            ...prev,
+            categoryIds: prev.categoryIds.includes(id)
+                ? prev.categoryIds.filter(v => v !== id)
+                : [...prev.categoryIds, id]
+        }));
+    }
 
     const removeImage = (index: number) => {
         setFormData(prev => ({
@@ -106,13 +129,6 @@ export default function EditProduct() {
         }))
     }
 
-    const insertImageToSpecMarkdown = () => {
-        if (!tempSpecMarkdownImage) return;
-        const markdownImage = `\n![Image](${tempSpecMarkdownImage})\n`;
-        setFormData(prev => ({ ...prev, specifications: prev.specifications + markdownImage }));
-        setTempSpecMarkdownImage("");
-        setShowSpecMarkdownImageSelector(false);
-    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -151,9 +167,9 @@ export default function EditProduct() {
         }
     }
 
-    const filteredCategories = categories.filter(c => c.businessUnitId === formData.businessUnitId)
+    const filteredCategories = categories.filter(c => formData.businessUnitIds.includes(c.businessUnitId))
 
-    if (loading) return <div>Loading...</div>
+    if (loading) return <Loading />
 
     return (
         <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow pb-24">
@@ -165,49 +181,84 @@ export default function EditProduct() {
             <form onSubmit={handleSubmit} className="space-y-10">
                 <section className="space-y-6">
                     <h3 className="text-lg font-semibold border-b pb-2">기본 정보</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium mb-1.5 text-gray-700">사업 분야</label>
-                            <select
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
-                                value={formData.businessUnitId}
-                                onChange={(e) => setFormData({ ...formData, businessUnitId: e.target.value, categoryId: "" })}
-                                required
-                            >
-                                <option value="">선택하세요</option>
-                                {units.map(u => (
-                                    <option key={u.id} value={u.id}>{u.name}</option>
-                                ))}
-                            </select>
-                        </div>
 
-                        <div>
-                            <label className="block text-sm font-medium mb-1.5 text-gray-700">카테고리</label>
-                            <select
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
-                                value={formData.categoryId}
-                                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                                disabled={!formData.businessUnitId}
-                            >
-                                <option value="">카테고리 선택 (없음 가능)</option>
-                                {categories
-                                    .filter(c => c.businessUnitId === formData.businessUnitId && !c.parentId)
-                                    .map(parent => (
-                                        <optgroup key={parent.id} label={parent.name}>
-                                            <option value={parent.id}>{parent.name} (전체)</option>
-                                            {categories
-                                                .filter(child => child.parentId === parent.id)
-                                                .map(child => (
-                                                    <option key={child.id} value={child.id}>
-                                                        &nbsp;&nbsp;ㄴ {child.name}
-                                                    </option>
-                                                ))
-                                            }
-                                        </optgroup>
-                                    ))
-                                }
-                            </select>
+                    <div className="space-y-4">
+                        <label className="block text-sm font-bold text-slate-700">사업 분야 설정 <span className="text-red-500">* (중복 선택 가능)</span></label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {units.map(u => {
+                                const isSelected = formData.businessUnitIds.includes(u.id);
+                                return (
+                                    <button
+                                        key={u.id}
+                                        type="button"
+                                        onClick={() => toggleBusinessUnit(u.id)}
+                                        className={`px-4 py-3 rounded-xl border-2 transition-all text-sm font-bold ${isSelected
+                                            ? "border-primary bg-primary/5 text-primary shadow-sm"
+                                            : "border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200"
+                                            }`}
+                                    >
+                                        {u.name}
+                                    </button>
+                                );
+                            })}
                         </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <label className="block text-sm font-bold text-slate-700">카테고리 설정 <span className="text-slate-400 font-medium">(중복 선택 가능)</span></label>
+                        {formData.businessUnitIds.length === 0 ? (
+                            <div className="p-6 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100 text-center text-slate-400 text-sm">
+                                먼저 사업 분야를 선택해 주세요.
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {formData.businessUnitIds.map(buId => {
+                                    const unit = units.find(u => u.id === buId);
+                                    const unitCategories = categories.filter(c => c.businessUnitId === buId && !c.parentId);
+                                    if (unitCategories.length === 0) return null;
+
+                                    return (
+                                        <div key={buId} className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                                            <h4 className="text-sm font-black text-slate-900 mb-4 flex items-center gap-2">
+                                                <span className="w-1 h-3 bg-slate-900 rounded-full" />
+                                                {unit?.name} 카테고리
+                                            </h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                                {unitCategories.map(parent => (
+                                                    <div key={parent.id} className="space-y-3">
+                                                        <label className="flex items-center gap-3 cursor-pointer group">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
+                                                                checked={formData.categoryIds.includes(parent.id)}
+                                                                onChange={() => toggleCategory(parent.id)}
+                                                            />
+                                                            <span className={`text-sm font-bold ${formData.categoryIds.includes(parent.id) ? "text-primary" : "text-slate-600"}`}>
+                                                                {parent.name}
+                                                            </span>
+                                                        </label>
+
+                                                        {categories.filter(c => c.parentId === parent.id).map(child => (
+                                                            <label key={child.id} className="flex items-center gap-3 ml-6 cursor-pointer group">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
+                                                                    checked={formData.categoryIds.includes(child.id)}
+                                                                    onChange={() => toggleCategory(child.id)}
+                                                                />
+                                                                <span className={`text-sm ${formData.categoryIds.includes(child.id) ? "text-primary font-bold" : "text-slate-500"}`}>
+                                                                    ㄴ {child.name}
+                                                                </span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -353,35 +404,6 @@ export default function EditProduct() {
                     </div>
                 </section>
 
-                <section className="space-y-6">
-                    <h3 className="text-lg font-semibold border-b pb-2">기타 정보</h3>
-                    <div>
-                        <div className="flex justify-between items-center mb-4">
-                            <label className="block text-sm font-medium text-gray-700">추가 상세 설명 (Markdown)</label>
-                            <Button type="button" variant="outline" size="sm" onClick={() => setShowSpecMarkdownImageSelector(!showSpecMarkdownImageSelector)} className="rounded-full">
-                                <ImageIcon className="h-4 w-4 mr-2" /> 마크다운 이미지 삽입
-                            </Button>
-                        </div>
-
-                        {showSpecMarkdownImageSelector && (
-                            <div className="bg-blue-50/50 p-6 rounded-xl border-2 border-dashed border-blue-100 mb-6 animate-in fade-in slide-in-from-top-2">
-                                <ImageSelector label="마크다운에 삽입할 이미지 선택" value={tempSpecMarkdownImage} onChange={setTempSpecMarkdownImage} />
-                                <div className="flex gap-2 mt-4">
-                                    <Button type="button" className="flex-1 rounded-full" onClick={insertImageToSpecMarkdown} disabled={!tempSpecMarkdownImage}>코드 삽입</Button>
-                                    <Button type="button" variant="ghost" onClick={() => { setTempSpecMarkdownImage(""); setShowSpecMarkdownImageSelector(false); }}>취소</Button>
-                                </div>
-                            </div>
-                        )}
-
-                        <Textarea
-                            value={formData.specifications}
-                            onChange={(e) => setFormData({ ...formData, specifications: e.target.value })}
-                            rows={10}
-                            className="font-mono text-sm leading-loose p-6 bg-slate-900 text-slate-100 rounded-2xl shadow-inner"
-                            placeholder="추가적인 텍스트 정보가 필요한 경우 작성하세요."
-                        />
-                    </div>
-                </section>
 
                 <div className="flex gap-4 pt-10 justify-between items-center sticky bottom-0 bg-white/90 backdrop-blur-sm py-6 border-t z-20">
                     <div className="flex gap-4">

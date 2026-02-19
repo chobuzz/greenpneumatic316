@@ -6,6 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import type { BusinessUnit } from "@/lib/db"
+import { Loading } from "@/components/ui/loading"
 
 export default function BusinessUnitList() {
     const [units, setUnits] = useState<BusinessUnit[]>([])
@@ -20,7 +21,7 @@ export default function BusinessUnitList() {
             })
     }, [])
 
-    if (loading) return <div>Loading...</div>
+    if (loading) return <Loading />
 
     return (
         <div>

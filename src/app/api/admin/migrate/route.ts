@@ -19,6 +19,8 @@ export async function GET() {
             bu.products.map(p => ({
                 ...p,
                 businessUnitId: bu.id,
+                businessUnitIds: JSON.stringify([bu.id]),
+                categoryIds: JSON.stringify((p as any).categoryId ? [(p as any).categoryId] : (p.categoryIds || [])),
                 // Stringify complex arrays for sheet storage
                 images: JSON.stringify(p.images),
                 models: JSON.stringify(p.models || []),

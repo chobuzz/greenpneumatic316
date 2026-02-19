@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, CheckCircle2, ShoppingCart, FileText, Minus, Plus, ChevronLeft, ChevronRight } from "lucide-react"
 import { useParams, useRouter } from "next/navigation"
 import type { Product, BusinessUnit, ProductModel } from "@/lib/db"
+import { Loading } from "@/components/ui/loading"
 import { QuotationModal } from "@/components/quotation-modal"
 
 export default function ProductDetailPage() {
@@ -29,7 +30,10 @@ export default function ProductDetailPage() {
                 fetch("/api/business-units")
                     .then(res => res.json())
                     .then((units: BusinessUnit[]) => {
-                        const unit = units.find(u => u.products.some(p => p.id === id))
+                        // Use product.businessUnitIds[0] as primary unit for UI context
+                        const targetBUId = product.businessUnitIds?.[0] || product.businessUnitId;
+                        const unit = units.find(u => u.id === targetBUId);
+
                         if (product && unit) {
                             setData({ product, unit })
                             if (product.models && product.models.length > 0) {
@@ -44,7 +48,7 @@ export default function ProductDetailPage() {
             })
     }, [id])
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>
+    if (loading) return <Loading />
     if (!data) return <div className="min-h-screen flex items-center justify-center">상품을 찾을 수 없습니다.</div>
 
     const { product, unit } = data
@@ -218,7 +222,7 @@ export default function ProductDetailPage() {
                                     className="h-14 text-lg rounded-xl border-2 hover:bg-slate-50"
                                     asChild
                                 >
-                                    <Link href="/#contact">전화 상담 문의</Link>
+                                    <Link href="/contact">문의하기</Link>
                                 </Button>
                                 <Button
                                     size="lg"
@@ -254,7 +258,7 @@ export default function ProductDetailPage() {
                         {product.specImages && product.specImages.length > 0 && (
                             <div className="flex flex-col gap-4">
                                 {product.specImages.map((img, idx) => (
-                                    <div key={idx} className="relative w-full overflow-hidden rounded-lg bg-gray-50 border">
+                                    <div key={idx} className="relative w-full overflow-hidden rounded-lg bg-gray-50 border border-slate-100/50">
                                         <img
                                             src={img}
                                             alt={`Spec Detail ${idx + 1}`}
@@ -265,12 +269,6 @@ export default function ProductDetailPage() {
                             </div>
                         )}
 
-                        {/* Markdown Text Specifications */}
-                        {product.specifications && (
-                            <div className="prose max-w-none text-slate-600 whitespace-pre-wrap leading-loose pt-8 border-t border-slate-100">
-                                {product.specifications}
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>

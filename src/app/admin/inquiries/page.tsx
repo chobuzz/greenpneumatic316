@@ -7,6 +7,7 @@ import { Trash2, Search, MessageSquare, Calendar, User, Building2, Mail, Phone, 
 import { Inquiry } from "@/lib/db"
 import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/admin/pagination"
+import { Loading } from "@/components/ui/loading"
 
 export default function AdminInquiryPage() {
     const [inquiries, setInquiries] = useState<Inquiry[]>([])
@@ -49,12 +50,7 @@ export default function AdminInquiryPage() {
     const totalPages = Math.ceil(filtered.length / itemsPerPage)
     const paginatedItems = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
-    if (loading) return (
-        <div className="p-20 text-center space-y-4">
-            <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full mx-auto" />
-            <p className="text-slate-500 font-medium">구글 스프레드시트에서 데이터를 불러오는 중...</p>
-        </div>
-    )
+    if (loading) return <Loading />
 
     if (error) return (
         <div className="p-20 text-center bg-red-50 rounded-[2.5rem] border border-red-100">

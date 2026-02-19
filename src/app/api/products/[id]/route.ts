@@ -11,8 +11,22 @@ export async function GET(
     const product = products.find(p => p.id === id);
 
     if (product) {
+        // Robust parsing: check both plural (if user added them) and singular columns
+        const parseField = (field: any) => {
+            if (typeof field === 'string' && (field.startsWith('[') || field.startsWith('{'))) {
+                try { return JSON.parse(field); } catch (e) { return [field]; }
+            }
+            return Array.isArray(field) ? field : (field ? [field] : []);
+        };
+
+        const businessUnitIds = parseField(product.businessUnitIds || product.businessUnitId);
+        const categoryIds = parseField(product.categoryIds || product.categoryId);
+
         return NextResponse.json({
             ...product,
+            businessUnitId: businessUnitIds[0] || "",
+            businessUnitIds,
+            categoryIds,
             images: typeof product.images === 'string' ? JSON.parse(product.images) : product.images || [],
             models: typeof product.models === 'string' ? JSON.parse(product.models) : product.models || [],
             specImages: typeof product.specImages === 'string' ? JSON.parse(product.specImages) : product.specImages || []
@@ -32,6 +46,12 @@ export async function PUT(
     const productUpdate = {
         ...body,
         id, // Ensure ID is consistent
+        // Save JSON string to BOTH singular and plural to be safe
+        businessUnitId: Array.isArray(body.businessUnitIds) ? JSON.stringify(body.businessUnitIds) : body.businessUnitIds,
+        categoryId: Array.isArray(body.categoryIds) ? JSON.stringify(body.categoryIds) : body.categoryIds,
+        businessUnitIds: Array.isArray(body.businessUnitIds) ? JSON.stringify(body.businessUnitIds) : body.businessUnitIds,
+        categoryIds: Array.isArray(body.categoryIds) ? JSON.stringify(body.categoryIds) : body.categoryIds,
+
         images: Array.isArray(body.images) ? JSON.stringify(body.images) : body.images,
         models: Array.isArray(body.models) ? JSON.stringify(body.models) : body.models,
         specImages: Array.isArray(body.specImages) ? JSON.stringify(body.specImages) : body.specImages,

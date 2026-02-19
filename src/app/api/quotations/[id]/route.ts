@@ -1,6 +1,6 @@
 
 import { NextResponse } from "next/server"
-import { readDb, writeDb } from "@/lib/db"
+import { syncToGoogleSheet } from "@/lib/sheets"
 
 export async function DELETE(
     req: Request,
@@ -8,12 +8,8 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params
-        const db = await readDb()
 
-        if (!db.quotations) return NextResponse.json({ error: "Not found" }, { status: 404 })
-
-        db.quotations = db.quotations.filter(q => q.id !== id)
-        await writeDb(db)
+        await syncToGoogleSheet('quotation', { id }, 'delete')
 
         return NextResponse.json({ success: true })
     } catch (error) {

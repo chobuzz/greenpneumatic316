@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import type { Category, BusinessUnit } from "@/lib/db"
 
 import { Trash2, Plus, Tag, Building2, LayoutGrid, ChevronUp, ChevronDown } from "lucide-react"
+import { Loading } from "@/components/ui/loading"
 
 interface CategoryWithUnit extends Category {
     businessUnitName: string
@@ -116,12 +117,7 @@ export default function CategoryManager() {
         }
     }
 
-    if (loading) return (
-        <div className="p-20 text-center">
-            <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-            <p className="text-slate-500">데이터를 불러오는 중...</p>
-        </div>
-    )
+    if (loading) return <Loading />
 
     return (
         <div className="space-y-10 max-w-6xl">

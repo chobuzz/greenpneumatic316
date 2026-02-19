@@ -15,7 +15,8 @@ export interface Product {
     id: string;
     name: string;
     description: string;
-    categoryId?: string;
+    categoryIds?: string[]; // Multiple categories
+    businessUnitIds?: string[]; // Multiple business units
     specifications?: string; // Markdown or HTML
     images: string[];
     models?: ProductModel[]; // Multiple model options with price

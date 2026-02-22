@@ -24,14 +24,19 @@ export async function POST(request: Request) {
         }
 
         const categories = await fetchFromGoogleSheet('category') as any[];
-        const sameLevelCats = categories.filter(c => c.businessUnitId === businessUnitId && c.parentId === parentId);
+        // Standardize parentId for comparison (treat null/undefined as "")
+        const targetParentId = parentId || "";
+        const sameLevelCats = categories.filter(c =>
+            c.businessUnitId === businessUnitId &&
+            (c.parentId || "") === targetParentId
+        );
         const maxOrder = sameLevelCats.reduce((max, c) => Math.max(max, Number(c.order) || 0), -1);
 
         const newCategory = {
             id: uuidv4(),
             name,
             businessUnitId,
-            parentId: parentId || "",
+            parentId: targetParentId,
             order: maxOrder + 1
         };
 

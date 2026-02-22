@@ -30,12 +30,23 @@ const RESET_DAYS = 180;
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
-    const action = payload.action; // 'create', 'update', 'delete', 'sync'
+    const action = payload.action; // 'create', 'update', 'delete', 'sync', 'bulkCreate'
     const type = payload.type;     // 'businessUnit', 'category', 'product', 'insight', 'quotation', 'inquiry', 'customers'
-    const data = payload.data || payload; 
+    
+    // data 파싱: action이 있는 경우 payload.data를 사용, 없으면 전체 payload를 사용
+    // bulkCreate/sync는 배열이어야 하므로 명시적으로 처리
+    let data;
+    if (action) {
+      data = payload.data; // action이 있으면 반드시 payload.data를 사용
+    } else {
+      data = payload.data || payload;
+    }
     
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const timestamp = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+
+    Logger.log("[doPost] action=" + action + ", type=" + type + ", dataType=" + typeof data + ", isArray=" + Array.isArray(data));
+    if (Array.isArray(data)) Logger.log("[doPost] data.length=" + data.length + ", firstItem=" + JSON.stringify(data[0] || {}));
 
     // A. [New] 신규 CRUD 엔진 (action이 명시된 경우)
     if (action) {
@@ -191,16 +202,120 @@ function doGet(e) {
 function handleCrudAction(ss, action, type, data) {
   const sheet = getOrCreateSheet(ss, type);
   
+  Logger.log("[handleCrudAction] action=" + action + ", type=" + type + ", sheetName=" + sheet.getName() + ", sheetLastRow=" + sheet.getLastRow());
+
   if (action === 'sync') {
-    sheet.clear();
-    if (data && data.length > 0) {
-      const headers = Object.keys(data[0]);
-      sheet.appendRow(headers);
-      data.forEach(item => {
-        sheet.appendRow(headers.map(h => typeof item[h] === 'object' ? JSON.stringify(item[h]) : (item[h] || "")));
-      });
+    if (!Array.isArray(data) || data.length === 0) {
+      sheet.clear();
+      return jsonResponse({result: "success", message: "Synced 0 items (cleared)"});
     }
-    return jsonResponse({result: "success", message: "Synced " + (data ? data.length : 0) + " items"});
+    sheet.clear();
+    const syncHeaders = Object.keys(data[0]);
+    sheet.appendRow(syncHeaders);
+    data.forEach(item => {
+      sheet.appendRow(syncHeaders.map(h => {
+        const val = item[h];
+        return typeof val === 'object' ? JSON.stringify(val) : (val !== undefined ? val : "");
+      }));
+    });
+    SpreadsheetApp.flush();
+    return jsonResponse({result: "success", message: "Synced " + data.length + " items"});
+  }
+
+  if (action === 'bulkCreate') {
+    try {
+      Logger.log("[bulkCreate] data type check: isArray=" + Array.isArray(data) + ", typeof=" + typeof data);
+      
+      if (!Array.isArray(data)) {
+        return jsonResponse({result: "error", message: "bulkCreate 오류: data가 배열이 아닙니다. 받은 타입: " + typeof data + ", 값: " + JSON.stringify(data).substring(0, 200)});
+      }
+      if (data.length === 0) {
+        return jsonResponse({result: "success", message: "No data to add", count: 0});
+      }
+
+      // 1. 기존 헤더 읽기 (없으면 새로 생성)
+      let headers = [];
+      if (sheet.getLastRow() > 0) {
+        headers = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0]
+          .map(h => String(h).trim())
+          .filter(h => h !== "");
+      }
+      
+      // 2. data[0]의 키 목록 확인
+      const sampleKeys = Object.keys(data[0]);
+      Logger.log("[bulkCreate] sampleKeys=" + JSON.stringify(sampleKeys) + ", existingHeaders=" + JSON.stringify(headers));
+      
+      // 3. 헤더가 없으면 data[0]의 키로 헤더 생성
+      if (headers.length === 0) {
+        // 'id'가 있다면 맨 앞으로
+        const idIdx = sampleKeys.findIndex(k => k.toLowerCase() === 'id');
+        if (idIdx > 0) {
+          const idKey = sampleKeys.splice(idIdx, 1)[0];
+          sampleKeys.unshift(idKey);
+        }
+        headers = sampleKeys;
+        sheet.appendRow(headers);
+        SpreadsheetApp.flush();
+        Logger.log("[bulkCreate] 새 헤더 생성: " + JSON.stringify(headers));
+      } else {
+        // 4. 기존 헤더에 없는 키가 있으면 추가
+        const missingKeys = sampleKeys.filter(k => 
+          !headers.some(h => h.toLowerCase() === k.toLowerCase())
+        );
+        if (missingKeys.length > 0) {
+          const finalHeaders = [...headers, ...missingKeys];
+          sheet.getRange(1, 1, 1, finalHeaders.length).setValues([finalHeaders]);
+          SpreadsheetApp.flush();
+          headers = finalHeaders;
+          Logger.log("[bulkCreate] 헤더 추가: " + JSON.stringify(missingKeys));
+        }
+      }
+
+      if (headers.length === 0) {
+        return jsonResponse({result: "error", message: "헤더를 결정할 수 없습니다."});
+      }
+
+      // 5. 각 아이템을 헤더 순서에 맞게 행 배열로 변환
+      const rowsToAdd = data.map(item => {
+        return headers.map(h => {
+          // 정확한 키 매칭 먼저 시도
+          if (item[h] !== undefined) {
+            const val = item[h];
+            return typeof val === 'object' && val !== null ? JSON.stringify(val) : (val !== null && val !== undefined ? val : "");
+          }
+          // 대소문자 무시 매칭
+          const lowerH = h.toLowerCase().trim();
+          const matchKey = Object.keys(item).find(k => k.toLowerCase().trim() === lowerH);
+          if (matchKey !== undefined) {
+            const val = item[matchKey];
+            return typeof val === 'object' && val !== null ? JSON.stringify(val) : (val !== null && val !== undefined ? val : "");
+          }
+          return "";
+        });
+      });
+      
+      Logger.log("[bulkCreate] 저장할 행 수: " + rowsToAdd.length + ", 컬럼 수: " + headers.length);
+      Logger.log("[bulkCreate] 첫 번째 행 샘플: " + JSON.stringify(rowsToAdd[0]));
+
+      const lastRow = sheet.getLastRow();
+      const startRow = lastRow + 1;
+      sheet.getRange(startRow, 1, rowsToAdd.length, headers.length).setValues(rowsToAdd);
+      SpreadsheetApp.flush();
+      
+      Logger.log("[bulkCreate] ✅ 성공! startRow=" + startRow + ", count=" + rowsToAdd.length);
+      return jsonResponse({result: "success", action: "bulkCreate", type: type, count: rowsToAdd.length, startRow: startRow});
+    } catch (e) {
+      Logger.log("[bulkCreate] ❌ 오류: " + e.toString() + " / stack: " + e.stack);
+      return jsonResponse({result: "error", message: "BulkCreate 오류: " + e.toString()});
+    }
+  }
+
+  // bulkCreate/sync 이외의 action은 headers 계산 필요
+  let headers = [];
+  if (action !== 'delete' && type !== 'emailSettings') {
+    headers = ensureHeadersExist(sheet, data || {});
+  } else if (sheet.getLastRow() > 0) {
+    headers = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0].map(h => String(h).trim()).filter(h => h !== "");
   }
 
   if (type === 'emailSettings') {
@@ -223,11 +338,16 @@ function handleCrudAction(ss, action, type, data) {
   if (action === 'update') {
     const id = data.id;
     const rows = sheet.getDataRange().getValues();
-    const headers = rows[0];
+    if (headers.length === 0) headers = rows[0];
+    
     for (let i = 1; i < rows.length; i++) {
       if (rows[i][0] == id) {
+        const itemMap = {};
+        Object.keys(data).forEach(k => { itemMap[String(k).toLowerCase().trim()] = data[k]; });
+
         const newRow = headers.map(h => {
-          const val = data[h] !== undefined ? data[h] : rows[i][headers.indexOf(h)];
+          const headerKey = String(h).toLowerCase().trim();
+          const val = itemMap[headerKey] !== undefined ? itemMap[headerKey] : rows[i][headers.indexOf(h)];
           return typeof val === 'object' ? JSON.stringify(val) : val;
         });
         sheet.getRange(i + 1, 1, 1, newRow.length).setValues([newRow]);
@@ -237,17 +357,60 @@ function handleCrudAction(ss, action, type, data) {
     return jsonResponse({result: "error", message: "ID not found"});
   }
 
-  // 기본: Append (Create)
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(Object.keys(data));
-  }
-  const currentHeaders = sheet.getDataRange().getValues()[0];
-  const rowData = currentHeaders.map(h => {
-    const val = data[h] !== undefined ? data[h] : "";
+  // 기본 Create (Append Row)
+  if (headers.length === 0) return jsonResponse({result: "error", message: "Headers not found for Create"});
+  const itemMap = {};
+  Object.keys(data).forEach(k => { itemMap[String(k).toLowerCase().trim()] = data[k]; });
+  
+  const rowData = headers.map(h => {
+    const headerKey = String(h).toLowerCase().trim();
+    const val = itemMap[headerKey] !== undefined ? itemMap[headerKey] : "";
     return typeof val === 'object' ? JSON.stringify(val) : val;
   });
   sheet.appendRow(rowData);
   return jsonResponse({result: "success"});
+}
+
+/**
+ * 전송된 데이터의 키가 시트 헤더에 없으면 자동으로 컬럼 추가
+ */
+function ensureHeadersExist(sheet, item) {
+  if (!item || typeof item !== 'object' || Array.isArray(item) || Object.keys(item).length === 0) {
+    if (sheet.getLastRow() > 0) {
+      return sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0].map(h => String(h).trim()).filter(h => h !== "");
+    }
+    return [];
+  }
+  
+  let currentHeaders = [];
+  if (sheet.getLastRow() > 0) {
+    currentHeaders = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0].map(h => String(h).trim());
+  }
+  
+  const itemKeys = Object.keys(item).map(k => String(k).trim());
+  // 'id'가 있다면 무조건 맨 앞으로
+  const idIdx = itemKeys.findIndex(k => k.toLowerCase() === 'id');
+  if (idIdx !== -1) {
+    const idKey = itemKeys.splice(idIdx, 1)[0];
+    itemKeys.unshift(idKey);
+  }
+
+  const missingKeys = itemKeys.filter(k => {
+    return !currentHeaders.some(h => h.toLowerCase() === k.toLowerCase());
+  });
+  
+  if (missingKeys.length > 0) {
+    const finalHeaders = [...currentHeaders.filter(h => h !== ""), ...missingKeys];
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(finalHeaders);
+    } else {
+      // 헤더 행 업데이트
+      sheet.getRange(1, 1, 1, finalHeaders.length).setValues([finalHeaders]);
+    }
+    SpreadsheetApp.flush();
+    return finalHeaders;
+  }
+  return currentHeaders.filter(h => h !== "");
 }
 
 /**
@@ -362,10 +525,28 @@ function getMapSheetName(type) {
 }
 
 function getOrCreateSheet(ss, type) {
-  const name = getMapSheetName(type);
-  let sheet = ss.getSheetByName(name);
-  if (!sheet) sheet = ss.insertSheet(name);
-  return sheet;
+  const mappedName = getMapSheetName(type);
+  const sheets = ss.getSheets();
+  
+  // 1. 매핑된 이름(한글 등)으로 정확히 찾기
+  let sheet = ss.getSheetByName(mappedName);
+  if (sheet) return sheet;
+  
+  // 2. 입력된 타입 이름(영문 키 등)으로 정확히 찾기
+  sheet = ss.getSheetByName(type);
+  if (sheet) return sheet;
+  
+  // 3. 대소문자 무시하고 비슷한 이름 찾기
+  const targetLower = String(type).toLowerCase();
+  const mappedLower = String(mappedName).toLowerCase();
+  
+  for (let i = 0; i < sheets.length; i++) {
+    const sName = sheets[i].getName().toLowerCase();
+    if (sName === targetLower || sName === mappedLower) return sheets[i];
+  }
+  
+  // 4. 없으면 매핑된 이름으로 새로 생성
+  return ss.insertSheet(mappedName);
 }
 
 function jsonResponse(data) {

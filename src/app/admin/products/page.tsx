@@ -25,6 +25,11 @@ export default function ProductList() {
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedUnit, setSelectedUnit] = useState("all")
     const [selectedCategory, setSelectedCategory] = useState("all")
+    const [isBulkOpen, setIsBulkOpen] = useState(false)
+    const [bulkNames, setBulkNames] = useState("")
+    const [bulkUnit, setBulkUnit] = useState("")
+    const [bulkCategory, setBulkCategory] = useState("")
+    const [isBulkSaving, setIsBulkSaving] = useState(false)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -68,8 +73,8 @@ export default function ProductList() {
     }, [])
 
     const filteredProducts = products.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.description?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = String(p.name ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            String(p.description ?? "").toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesUnit = selectedUnit === "all" ||
             p.businessUnitIds?.includes(selectedUnit) ||
@@ -91,12 +96,121 @@ export default function ProductList() {
                     <h1 className="text-3xl font-bold text-slate-900">상품 관리</h1>
                     <p className="text-slate-500 mt-1">등록된 모든 상품을 한눈에 관리하세요.</p>
                 </div>
-                <Button asChild className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/10">
-                    <Link href="/admin/products/new">
-                        <Plus className="h-5 w-5 mr-2" /> 새 상품 등록
-                    </Link>
-                </Button>
+                <div className="flex items-center gap-3">
+                    <Button asChild className="h-12 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-lg shadow-slate-200">
+                        <Link href="/admin/products/new">
+                            <Plus className="h-5 w-5 mr-2" /> 새 상품 등록
+                        </Link>
+                    </Button>
+                    <Button
+                        onClick={() => setIsBulkOpen(true)}
+                        variant="outline"
+                        className="h-12 px-6 rounded-xl border-slate-200 font-bold hover:bg-slate-50 transition-all"
+                    >
+                        <LayoutGrid className="h-5 w-5 mr-2" /> 대량 등록
+                    </Button>
+                </div>
             </div>
+
+            {/* Bulk Create Modal/Section */}
+            {isBulkOpen && (
+                <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                                <Plus className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold">상품 대량 등록</h3>
+                                <p className="text-slate-400 text-sm">여러 상품을 한꺼번에 기본 설정으로 생성합니다.</p>
+                            </div>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-slate-400 hover:text-white"
+                            onClick={() => setIsBulkOpen(false)}
+                        >
+                            닫기
+                        </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-500">사업부 선택 (필수)</label>
+                                <select
+                                    className="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                                    value={bulkUnit}
+                                    onChange={(e) => {
+                                        setBulkUnit(e.target.value);
+                                        setBulkCategory("");
+                                    }}
+                                >
+                                    <option value="" className="text-slate-900">사업부 선택</option>
+                                    {units.map(u => (
+                                        <option key={u.id} value={u.id} className="text-slate-900">{u.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-500">카테고리 선택 (옵션)</label>
+                                <select
+                                    className="w-full h-12 rounded-xl bg-white/5 border border-white/10 px-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                                    value={bulkCategory}
+                                    onChange={(e) => setBulkCategory(e.target.value)}
+                                >
+                                    <option value="" className="text-slate-900">선택 안 함</option>
+                                    {categories.filter(c => c.businessUnitId === bulkUnit).map(c => (
+                                        <option key={c.id} value={c.id} className="text-slate-900">{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-black uppercase tracking-widest text-slate-500">상품명 리스트 (줄바꿈 구분)</label>
+                            <textarea
+                                className="w-full h-[124px] rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                                placeholder="예:&#10;나사식 콤프레샤 15HP&#10;피스톤 콤프레샤 5HP&#10;에어 드라이어 20"
+                                value={bulkNames}
+                                onChange={(e) => setBulkNames(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                        <Button
+                            disabled={!bulkUnit || !bulkNames || isBulkSaving}
+                            className="bg-primary hover:bg-primary/90 text-white font-bold h-12 px-10 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95"
+                            onClick={async () => {
+                                setIsBulkSaving(true);
+                                try {
+                                    const names = bulkNames.split("\n").map(n => n.trim()).filter(n => n !== "");
+                                    const res = await fetch("/api/products/bulk", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                            names,
+                                            businessUnitIds: [bulkUnit],
+                                            categoryIds: bulkCategory ? [bulkCategory] : []
+                                        })
+                                    });
+                                    if (res.ok) {
+                                        window.location.reload();
+                                    }
+                                } catch (e) {
+                                    alert("저장 실패");
+                                } finally {
+                                    setIsBulkSaving(false);
+                                }
+                            }}
+                        >
+                            {isBulkSaving ? "저장 중..." : `${bulkNames.split("\n").filter(n => n.trim()).length}개 상품 일괄 생성`}
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             {/* Filter Bar */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">

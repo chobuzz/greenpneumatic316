@@ -17,6 +17,8 @@ export default function CategoryManager() {
     const [categories, setCategories] = useState<CategoryWithUnit[]>([])
     const [units, setUnits] = useState<BusinessUnit[]>([])
     const [newCatName, setNewCatName] = useState("")
+    const [bulkNames, setBulkNames] = useState("")
+    const [isBulkMode, setIsBulkMode] = useState(false)
     const [selectedUnit, setSelectedUnit] = useState("")
     const [selectedParent, setSelectedParent] = useState("")
     const [loading, setLoading] = useState(true)
@@ -43,22 +45,43 @@ export default function CategoryManager() {
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newCatName || !selectedUnit) return;
+        if (isBulkMode && (!bulkNames || !selectedUnit)) return;
+        if (!isBulkMode && (!newCatName || !selectedUnit)) return;
 
         try {
-            const res = await fetch("/api/categories", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: newCatName,
-                    businessUnitId: selectedUnit,
-                    parentId: selectedParent || null
-                })
-            });
-            if (res.ok) {
-                setNewCatName("");
-                setSelectedParent("");
-                fetchData(); // Refresh
+            if (isBulkMode) {
+                const names = bulkNames.split("\n").map(n => n.trim()).filter(n => n !== "");
+                if (names.length === 0) return;
+
+                const res = await fetch("/api/categories/bulk", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        names,
+                        businessUnitId: selectedUnit,
+                        parentId: selectedParent
+                    })
+                });
+                if (res.ok) {
+                    setBulkNames("");
+                    setSelectedParent("");
+                    fetchData();
+                }
+            } else {
+                const res = await fetch("/api/categories", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: newCatName,
+                        businessUnitId: selectedUnit,
+                        parentId: selectedParent // It will be "" if not selected, which API handles as top-level
+                    })
+                });
+                if (res.ok) {
+                    setNewCatName("");
+                    setSelectedParent("");
+                    fetchData(); // Refresh
+                }
             }
         } catch (err) {
             alert("추가 실패");
@@ -128,65 +151,92 @@ export default function CategoryManager() {
 
             <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                        <Plus className="h-5 w-5" />
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                            <Plus className="h-5 w-5" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900">새 카테고리 추가</h3>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900">새 카테고리 추가</h3>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={`rounded-lg font-bold ${isBulkMode ? 'bg-primary/10 text-primary' : 'text-slate-400'}`}
+                        onClick={() => setIsBulkMode(!isBulkMode)}
+                    >
+                        {isBulkMode ? '단일 등록으로 전환' : '대량 등록 모드'}
+                    </Button>
                 </div>
 
-                <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                <form onSubmit={handleAdd} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <Building2 className="h-4 w-4 text-slate-400" /> 사업 분야
+                            </label>
+                            <select
+                                className="flex h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                                value={selectedUnit}
+                                onChange={(e) => {
+                                    setSelectedUnit(e.target.value);
+                                    setSelectedParent(""); // Reset parent when unit changes
+                                }}
+                                required
+                            >
+                                <option value="">사업 분야 선택</option>
+                                {units.map(u => (
+                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <LayoutGrid className="h-4 w-4 text-slate-400" /> 상위 카테고리
+                            </label>
+                            <select
+                                className="flex h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                                value={selectedParent}
+                                onChange={(e) => setSelectedParent(e.target.value)}
+                            >
+                                <option value="">없음 (대분류 생성)</option>
+                                {categories
+                                    .filter(c => c.businessUnitId === selectedUnit && !c.parentId)
+                                    .map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))
+                                }
+                            </select>
+                        </div>
+                    </div>
+
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-slate-400" /> 사업 분야
+                            <Tag className="h-4 w-4 text-slate-400" /> {isBulkMode ? '카테고리 리스트 (줄바꿈으로 구분)' : '카테고리명'}
                         </label>
-                        <select
-                            className="flex h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-                            value={selectedUnit}
-                            onChange={(e) => {
-                                setSelectedUnit(e.target.value);
-                                setSelectedParent(""); // Reset parent when unit changes
-                            }}
-                            required
-                        >
-                            <option value="">사업 분야 선택</option>
-                            {units.map(u => (
-                                <option key={u.id} value={u.id}>{u.name}</option>
-                            ))}
-                        </select>
+                        {isBulkMode ? (
+                            <textarea
+                                value={bulkNames}
+                                onChange={(e) => setBulkNames(e.target.value)}
+                                placeholder="예:&#10;카테고리 1&#10;카테고리 2&#10;카테고리 3"
+                                required
+                                className="flex min-h-[120px] w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none resize-none"
+                            />
+                        ) : (
+                            <Input
+                                value={newCatName}
+                                onChange={(e) => setNewCatName(e.target.value)}
+                                placeholder="명칭 입력"
+                                required={!isBulkMode}
+                                className="h-12 rounded-xl bg-slate-50 border-slate-200 focus:bg-white transition-all"
+                            />
+                        )}
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <LayoutGrid className="h-4 w-4 text-slate-400" /> 상위 카테고리
-                        </label>
-                        <select
-                            className="flex h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-                            value={selectedParent}
-                            onChange={(e) => setSelectedParent(e.target.value)}
-                        >
-                            <option value="">없음 (대분류 생성)</option>
-                            {categories
-                                .filter(c => c.businessUnitId === selectedUnit && !c.parentId)
-                                .map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))
-                            }
-                        </select>
+
+                    <div className="flex justify-end">
+                        <Button type="submit" className="h-12 px-8 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-lg shadow-slate-200 transition-all active:scale-95">
+                            <Plus className="h-4 w-4 mr-2" /> {isBulkMode ? '대량 생성' : '생성'}
+                        </Button>
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <Tag className="h-4 w-4 text-slate-400" /> 카테고리명
-                        </label>
-                        <Input
-                            value={newCatName}
-                            onChange={(e) => setNewCatName(e.target.value)}
-                            placeholder="명칭 입력"
-                            required
-                            className="h-12 rounded-xl bg-slate-50 border-slate-200 focus:bg-white transition-all"
-                        />
-                    </div>
-                    <Button type="submit" className="h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-lg shadow-slate-200 transition-all active:scale-95">
-                        <Plus className="h-4 w-4 mr-2" /> 생성
-                    </Button>
                 </form>
             </div>
 

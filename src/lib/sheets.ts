@@ -8,7 +8,7 @@ export type SheetEntityType = 'businessUnit' | 'category' | 'product' | 'insight
 export async function syncToGoogleSheet(
     type: SheetEntityType,
     data: any,
-    action: 'create' | 'update' | 'delete' | 'sync' = 'create'
+    action: 'create' | 'update' | 'delete' | 'sync' | 'bulkCreate' = 'create'
 ) {
     const scriptUrl = process.env.GOOGLE_SCRIPT_URL
 
@@ -37,14 +37,21 @@ export async function syncToGoogleSheet(
             redirect: 'follow'
         })
 
-        const result = await response.json()
+        const responseText = await response.text();
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (e) {
+            console.error(`❌ [Sheets] GAS 응답이 JSON이 아님:`, responseText);
+            return { success: false, error: `GAS Response is not JSON. Status: ${response.status}` };
+        }
 
         if (result.result === "success") {
-            console.log(`✅ [Sheets] ${type} (${action}) 완료!`)
-            return { success: true, message: result.message }
+            console.log(`✅ [Sheets] ${type} (${action}) 완료!`, result);
+            return { success: true, message: result.message || "Success" };
         } else {
-            console.error(`❌ [Sheets] GAS 오류:`, result.message)
-            return { success: false, error: result.message }
+            console.error(`❌ [Sheets] GAS 오류:`, result.message || result.error || "Unknown Error");
+            return { success: false, error: result.message || result.error || "GAS returned error" };
         }
     } catch (error: any) {
         console.error("❌ [Sheets] 통신 치명적 오류:", error)

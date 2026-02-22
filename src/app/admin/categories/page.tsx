@@ -6,11 +6,44 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Category, BusinessUnit } from "@/lib/db"
 
-import { Trash2, Plus, Tag, Building2, LayoutGrid, ChevronUp, ChevronDown } from "lucide-react"
+import { Trash2, Plus, Tag, Building2, LayoutGrid, ChevronUp, ChevronDown, Layers, ChevronRight } from "lucide-react"
 import { Loading } from "@/components/ui/loading"
 
 interface CategoryWithUnit extends Category {
     businessUnitName: string
+}
+
+// 재귀적으로 카테고리 계층 구조 빌드
+interface CategoryNode extends CategoryWithUnit {
+    children: CategoryNode[]
+}
+
+function buildTree(categories: CategoryWithUnit[], parentId: string | undefined | null): CategoryNode[] {
+    return categories
+        .filter(c => (c.parentId || "") === (parentId || ""))
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .map(c => ({
+            ...c,
+            children: buildTree(categories, c.id)
+        }))
+}
+
+// 모든 카테고리를 flat list로 (들여쓰기 레벨 포함)
+function getFlatList(categories: CategoryWithUnit[], unitId: string): { cat: CategoryWithUnit; depth: number }[] {
+    const result: { cat: CategoryWithUnit; depth: number }[] = []
+
+    function traverse(parentId: string, depth: number) {
+        const items = categories
+            .filter(c => c.businessUnitId === unitId && (c.parentId || "") === parentId)
+            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        for (const item of items) {
+            result.push({ cat: item, depth })
+            traverse(item.id, depth + 1)
+        }
+    }
+
+    traverse("", 0)
+    return result
 }
 
 export default function CategoryManager() {
@@ -30,10 +63,7 @@ export default function CategoryManager() {
         ]);
         let catData = await catRes.json() as CategoryWithUnit[];
         const unitData = await unitRes.json();
-
-        // Sorting is now handled by API, but we ensure it here as well for safety
         catData.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-
         setCategories(catData);
         setUnits(unitData);
         setLoading(false);
@@ -52,36 +82,19 @@ export default function CategoryManager() {
             if (isBulkMode) {
                 const names = bulkNames.split("\n").map(n => n.trim()).filter(n => n !== "");
                 if (names.length === 0) return;
-
                 const res = await fetch("/api/categories/bulk", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        names,
-                        businessUnitId: selectedUnit,
-                        parentId: selectedParent
-                    })
+                    body: JSON.stringify({ names, businessUnitId: selectedUnit, parentId: selectedParent })
                 });
-                if (res.ok) {
-                    setBulkNames("");
-                    setSelectedParent("");
-                    fetchData();
-                }
+                if (res.ok) { setBulkNames(""); setSelectedParent(""); fetchData(); }
             } else {
                 const res = await fetch("/api/categories", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        name: newCatName,
-                        businessUnitId: selectedUnit,
-                        parentId: selectedParent // It will be "" if not selected, which API handles as top-level
-                    })
+                    body: JSON.stringify({ name: newCatName, businessUnitId: selectedUnit, parentId: selectedParent })
                 });
-                if (res.ok) {
-                    setNewCatName("");
-                    setSelectedParent("");
-                    fetchData(); // Refresh
-                }
+                if (res.ok) { setNewCatName(""); setSelectedParent(""); fetchData(); }
             }
         } catch (err) {
             alert("추가 실패");
@@ -89,7 +102,7 @@ export default function CategoryManager() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm("삭제하시겠습니까? 관련 데이터가 영구적으로 삭제됩니다.")) return;
+        if (!confirm("삭제하시겠습니까? 하위 카테고리가 있으면 함께 삭제될 수 있습니다.")) return;
         try {
             await fetch(`/api/categories/${id}`, { method: "DELETE" });
             fetchData();
@@ -99,29 +112,21 @@ export default function CategoryManager() {
     }
 
     const handleMove = async (unitId: string, parentId: string | undefined, catId: string, direction: 'up' | 'down') => {
-        // Filter categories at the same level (same unit AND same parent)
-        const peerCats = categories.filter(c => c.businessUnitId === unitId && c.parentId === parentId);
-        const index = peerCats.findIndex(c => c.id === catId);
+        const peerCats = categories.filter(c => c.businessUnitId === unitId && (c.parentId || "") === (parentId || ""));
+        const sorted = [...peerCats].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        const index = sorted.findIndex(c => c.id === catId);
         if (index === -1) return;
-
         if (direction === 'up' && index === 0) return;
-        if (direction === 'down' && index === peerCats.length - 1) return;
+        if (direction === 'down' && index === sorted.length - 1) return;
 
-        const newPeerCats = [...peerCats];
+        const newSorted = [...sorted];
         const swapIndex = direction === 'up' ? index - 1 : index + 1;
-        [newPeerCats[index], newPeerCats[swapIndex]] = [newPeerCats[swapIndex], newPeerCats[index]];
+        [newSorted[index], newSorted[swapIndex]] = [newSorted[swapIndex], newSorted[index]];
 
-        // We need to maintain the full list order. 
-        // Simple approach: reconstruct the list by taking all other categories and appending/inserting these.
-        // But the API expects orderedIds. We'll build the final ordered list.
-        const otherCats = categories.filter(c => !(c.businessUnitId === unitId && c.parentId === parentId));
-
-        // To keep it simple, we'll just send the moved items, but the API expects FULL list to rebuild all orders.
-        // We'll re-map the entire 'categories' state with swapped items.
         let peerCursor = 0;
         const finalOrderedIds = categories.map(c => {
-            if (c.businessUnitId === unitId && c.parentId === parentId) {
-                return newPeerCats[peerCursor++].id;
+            if (c.businessUnitId === unitId && (c.parentId || "") === (parentId || "")) {
+                return newSorted[peerCursor++].id;
             }
             return c.id;
         });
@@ -132,9 +137,7 @@ export default function CategoryManager() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ orderedIds: finalOrderedIds })
             });
-            if (res.ok) {
-                fetchData();
-            }
+            if (res.ok) { fetchData(); }
         } catch (err) {
             alert("순서 변경 실패");
         }
@@ -142,15 +145,36 @@ export default function CategoryManager() {
 
     if (loading) return <Loading />
 
+    // 레벨 label helper
+    const levelLabel = (depth: number) => {
+        if (depth === 0) return { text: "대분류", color: "bg-violet-100 text-violet-700", dot: "bg-violet-400" }
+        if (depth === 1) return { text: "중분류", color: "bg-blue-100 text-blue-700", dot: "bg-blue-400" }
+        return { text: "소분류", color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-400" }
+    }
+
     return (
         <div className="space-y-10 max-w-6xl">
+            {/* 헤더 */}
             <div>
                 <h1 className="text-3xl font-bold text-slate-900">카테고리 관리</h1>
-                <p className="text-slate-500 mt-1">2단계 계층 구조로 카테고리를 분류하고 상세 순서를 관리합니다.</p>
+                <p className="text-slate-500 mt-1">3단계 계층 구조(대분류 → 중분류 → 소분류)로 카테고리를 분류합니다.</p>
+                <div className="flex items-center gap-3 mt-4">
+                    {[
+                        { label: "대분류", color: "bg-violet-100 text-violet-700 border-violet-200" },
+                        { label: "중분류", color: "bg-blue-100 text-blue-700 border-blue-200" },
+                        { label: "소분류", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+                    ].map((item, i) => (
+                        <div key={i} className="flex items-center gap-1.5">
+                            {i > 0 && <ChevronRight className="h-3 w-3 text-slate-300" />}
+                            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${item.color}`}>{item.label}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
 
+            {/* 추가 폼 */}
             <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                             <Plus className="h-5 w-5" />
@@ -170,6 +194,7 @@ export default function CategoryManager() {
 
                 <form onSubmit={handleAdd} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* 사업 분야 */}
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                                 <Building2 className="h-4 w-4 text-slate-400" /> 사업 분야
@@ -177,10 +202,7 @@ export default function CategoryManager() {
                             <select
                                 className="flex h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                                 value={selectedUnit}
-                                onChange={(e) => {
-                                    setSelectedUnit(e.target.value);
-                                    setSelectedParent(""); // Reset parent when unit changes
-                                }}
+                                onChange={(e) => { setSelectedUnit(e.target.value); setSelectedParent(""); }}
                                 required
                             >
                                 <option value="">사업 분야 선택</option>
@@ -189,26 +211,34 @@ export default function CategoryManager() {
                                 ))}
                             </select>
                         </div>
+
+                        {/* 상위 카테고리 - 대분류/중분류 모두 선택 가능 */}
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                <LayoutGrid className="h-4 w-4 text-slate-400" /> 상위 카테고리
+                                <Layers className="h-4 w-4 text-slate-400" /> 상위 카테고리
                             </label>
                             <select
                                 className="flex h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                                 value={selectedParent}
                                 onChange={(e) => setSelectedParent(e.target.value)}
+                                disabled={!selectedUnit}
                             >
                                 <option value="">없음 (대분류 생성)</option>
-                                {categories
-                                    .filter(c => c.businessUnitId === selectedUnit && !c.parentId)
-                                    .map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                    ))
-                                }
+                                {selectedUnit && getFlatList(categories, selectedUnit).map(({ cat, depth }) => (
+                                    <option key={cat.id} value={cat.id}>
+                                        {depth === 0 ? "" : depth === 1 ? "  └ " : "    └ "}{cat.name} {depth === 0 ? "(대분류)" : depth === 1 ? "(중분류)" : "(소분류)"}
+                                    </option>
+                                ))}
                             </select>
+                            {selectedParent && (
+                                <p className="text-xs text-slate-400 pl-1">
+                                    선택된 상위 항목 하위에 카테고리가 생성됩니다.
+                                </p>
+                            )}
                         </div>
                     </div>
 
+                    {/* 카테고리명 */}
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                             <Tag className="h-4 w-4 text-slate-400" /> {isBulkMode ? '카테고리 리스트 (줄바꿈으로 구분)' : '카테고리명'}
@@ -217,7 +247,7 @@ export default function CategoryManager() {
                             <textarea
                                 value={bulkNames}
                                 onChange={(e) => setBulkNames(e.target.value)}
-                                placeholder="예:&#10;카테고리 1&#10;카테고리 2&#10;카테고리 3"
+                                placeholder={"예:\n카테고리 1\n카테고리 2\n카테고리 3"}
                                 required
                                 className="flex min-h-[120px] w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none resize-none"
                             />
@@ -240,100 +270,124 @@ export default function CategoryManager() {
                 </form>
             </div>
 
+            {/* 카테고리 목록 - 3단계 트리 */}
             <div className="grid grid-cols-1 gap-12">
                 {units.map(unit => {
-                    const unitTopCategories = categories.filter(c => c.businessUnitId === unit.id && !c.parentId)
-
-                    if (unitTopCategories.length === 0) return null;
+                    const tree = buildTree(categories.filter(c => c.businessUnitId === unit.id), undefined)
+                    if (tree.length === 0) return null;
 
                     return (
                         <div key={unit.id} className="space-y-6">
-                            <div className="flex items-center gap-3 pb-2 border-b border-slate-200">
+                            {/* 사업 분야 헤더 */}
+                            <div className="flex items-center gap-3 pb-3 border-b-2 border-slate-100">
                                 <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white">
                                     <Building2 className="h-5 w-5" />
                                 </div>
-                                <h2 className="text-xl font-black text-slate-900">{unit.name}</h2>
+                                <div>
+                                    <h2 className="text-xl font-black text-slate-900">{unit.name}</h2>
+                                    <p className="text-xs text-slate-400">{tree.length}개 대분류</p>
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {unitTopCategories.map((parent, pIdx) => {
-                                    const children = categories.filter(c => c.parentId === parent.id);
-
+                            {/* 대분류 카드들 */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {tree.map((parent, pIdx) => {
+                                    const allParentPeers = tree;
                                     return (
-                                        <div key={parent.id} className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all group">
-                                            {/* Parent Category Header */}
-                                            <div className="bg-slate-50/50 p-5 border-b border-slate-100 flex items-center justify-between">
+                                        <div key={parent.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
+                                            {/* 대분류 헤더 */}
+                                            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-violet-50 to-white">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-primary shadow-sm font-bold text-xs">
-                                                        {pIdx + 1}
-                                                    </div>
+                                                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200">대분류</span>
                                                     <span className="font-black text-slate-900">{parent.name}</span>
+                                                    {parent.children.length > 0 && (
+                                                        <span className="text-xs text-slate-400">({parent.children.length}개 중분류)</span>
+                                                    )}
                                                 </div>
                                                 <div className="flex items-center gap-1">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-7 w-7 rounded-lg text-slate-400 hover:bg-white"
+                                                    <button
+                                                        className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-all disabled:opacity-30"
                                                         onClick={() => handleMove(unit.id, undefined, parent.id, 'up')}
                                                         disabled={pIdx === 0}
-                                                    >
-                                                        <ChevronUp className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-7 w-7 rounded-lg text-slate-400 hover:bg-white"
+                                                    ><ChevronUp className="h-3.5 w-3.5" /></button>
+                                                    <button
+                                                        className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-all disabled:opacity-30"
                                                         onClick={() => handleMove(unit.id, undefined, parent.id, 'down')}
-                                                        disabled={pIdx === unitTopCategories.length - 1}
-                                                    >
-                                                        <ChevronDown className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-7 w-7 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                                        disabled={pIdx === allParentPeers.length - 1}
+                                                    ><ChevronDown className="h-3.5 w-3.5" /></button>
+                                                    <button
+                                                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
                                                         onClick={() => handleDelete(parent.id)}
-                                                    >
-                                                        <Trash2 className="h-3 w-3" />
-                                                    </Button>
+                                                    ><Trash2 className="h-3.5 w-3.5" /></button>
                                                 </div>
                                             </div>
 
-                                            {/* Child Categories */}
-                                            <div className="p-4 space-y-2">
-                                                {children.length > 0 ? (
-                                                    children.map((child, cIdx) => (
-                                                        <div key={child.id} className="flex items-center justify-between pl-4 pr-2 py-2 rounded-xl hover:bg-slate-50 transition-all group/child">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                                                <span className="text-sm font-bold text-slate-700">{child.name}</span>
+                                            {/* 중분류 목록 */}
+                                            <div className="p-4 space-y-3">
+                                                {parent.children.length > 0 ? (
+                                                    parent.children.map((mid, mIdx) => (
+                                                        <div key={mid.id} className="rounded-xl border border-slate-100 bg-slate-50/50 overflow-hidden">
+                                                            {/* 중분류 행 */}
+                                                            <div className="px-3 py-2.5 flex items-center justify-between bg-gradient-to-r from-blue-50 to-slate-50 border-b border-slate-100">
+                                                                <div className="flex items-center gap-2">
+                                                                    <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                                                                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">중분류</span>
+                                                                    <span className="text-sm font-bold text-slate-800">{mid.name}</span>
+                                                                    {mid.children.length > 0 && (
+                                                                        <span className="text-xs text-slate-400">({mid.children.length}개 소분류)</span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <button
+                                                                        className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all disabled:opacity-30"
+                                                                        onClick={() => handleMove(unit.id, parent.id, mid.id, 'up')}
+                                                                        disabled={mIdx === 0}
+                                                                    ><ChevronUp className="h-3 w-3" /></button>
+                                                                    <button
+                                                                        className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all disabled:opacity-30"
+                                                                        onClick={() => handleMove(unit.id, parent.id, mid.id, 'down')}
+                                                                        disabled={mIdx === parent.children.length - 1}
+                                                                    ><ChevronDown className="h-3 w-3" /></button>
+                                                                    <button
+                                                                        className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                                                                        onClick={() => handleDelete(mid.id)}
+                                                                    ><Trash2 className="h-3 w-3" /></button>
+                                                                </div>
                                                             </div>
-                                                            <div className="flex items-center gap-1 opacity-0 group-hover/child:opacity-100 transition-all">
-                                                                <button
-                                                                    onClick={() => handleMove(unit.id, parent.id, child.id, 'up')}
-                                                                    disabled={cIdx === 0}
-                                                                    className="p-1 hover:text-primary disabled:opacity-30"
-                                                                >
-                                                                    <ChevronUp className="h-3.5 w-3.5" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleMove(unit.id, parent.id, child.id, 'down')}
-                                                                    disabled={cIdx === children.length - 1}
-                                                                    className="p-1 hover:text-primary disabled:opacity-30"
-                                                                >
-                                                                    <ChevronDown className="h-3.5 w-3.5" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleDelete(child.id)}
-                                                                    className="p-1 hover:text-red-500"
-                                                                >
-                                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                                </button>
-                                                            </div>
+
+                                                            {/* 소분류 목록 */}
+                                                            {mid.children.length > 0 ? (
+                                                                <div className="p-2 flex flex-wrap gap-1.5">
+                                                                    {mid.children.map((leaf, lIdx) => (
+                                                                        <div key={leaf.id} className="group/leaf flex items-center gap-1 bg-white border border-emerald-100 rounded-full px-3 py-1 hover:border-emerald-300 hover:bg-emerald-50 transition-all">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                                                                            <span className="text-xs font-semibold text-slate-700">{leaf.name}</span>
+                                                                            <div className="flex items-center gap-0.5 opacity-0 group-hover/leaf:opacity-100 transition-all ml-1">
+                                                                                <button
+                                                                                    className="text-slate-300 hover:text-emerald-600 disabled:opacity-20 transition-all"
+                                                                                    onClick={() => handleMove(unit.id, mid.id, leaf.id, 'up')}
+                                                                                    disabled={lIdx === 0}
+                                                                                ><ChevronUp className="h-3 w-3" /></button>
+                                                                                <button
+                                                                                    className="text-slate-300 hover:text-emerald-600 disabled:opacity-20 transition-all"
+                                                                                    onClick={() => handleMove(unit.id, mid.id, leaf.id, 'down')}
+                                                                                    disabled={lIdx === mid.children.length - 1}
+                                                                                ><ChevronDown className="h-3 w-3" /></button>
+                                                                                <button
+                                                                                    className="text-slate-300 hover:text-red-500 transition-all"
+                                                                                    onClick={() => handleDelete(leaf.id)}
+                                                                                ><Trash2 className="h-3 w-3" /></button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <p className="text-[11px] text-slate-400 italic text-center py-3">소분류가 없습니다.</p>
+                                                            )}
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <p className="text-[11px] text-slate-400 italic text-center py-4">하위 카테고리가 없습니다.</p>
+                                                    <p className="text-[11px] text-slate-400 italic text-center py-4">중분류가 없습니다.</p>
                                                 )}
                                             </div>
                                         </div>

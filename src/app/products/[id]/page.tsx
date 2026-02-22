@@ -5,11 +5,12 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, CheckCircle2, ShoppingCart, FileText, Minus, Plus, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowLeft, CheckCircle2, ShoppingCart, FileText, Minus, Plus, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
 import { useParams, useRouter } from "next/navigation"
 import type { Product, BusinessUnit, ProductModel } from "@/lib/db"
 import { Loading } from "@/components/ui/loading"
 import { QuotationModal } from "@/components/quotation-modal"
+import { MediaRenderer } from "@/components/ui/media-renderer"
 
 export default function ProductDetailPage() {
     const params = useParams()
@@ -150,39 +151,42 @@ export default function ProductDetailPage() {
                             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary mb-3">
                                 {unit.name}
                             </span>
-                            <h1 className="text-3xl md:text-4xl font-bold mb-4">{product.name}</h1>
-                            <p className="text-lg text-muted-foreground leading-relaxed">
-                                {product.description}
-                            </p>
+                            <h1 className="text-3xl md:text-4xl font-bold mb-5">{product.name}</h1>
+                            {product.description && (
+                                <div className="bg-slate-50 rounded-2xl border border-slate-100 px-6 py-5">
+                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">제품 설명</p>
+                                    <p className="text-base text-slate-700 leading-relaxed font-medium whitespace-pre-line">
+                                        {product.description}
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Model Selection */}
+                        {/* Model Selection Dropdown */}
                         {product.models && product.models.length > 0 && (
                             <div className="mb-8 space-y-4">
                                 <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">모델 선택</h3>
-                                <div className="grid grid-cols-1 gap-3">
-                                    {product.models.map((model, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => setSelectedModel(model)}
-                                            className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${selectedModel?.name === model.name
-                                                ? "border-primary bg-primary/5 ring-1 ring-primary"
-                                                : "border-slate-100 bg-white hover:border-slate-200"
-                                                }`}
-                                        >
-                                            <div className="flex items-center">
-                                                <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${selectedModel?.name === model.name ? "border-primary" : "border-slate-300"}`}>
-                                                    {selectedModel?.name === model.name && <div className="w-2.5 h-2.5 bg-primary rounded-full" />}
-                                                </div>
-                                                <div className="text-left">
-                                                    <div className="font-bold text-slate-800">{model.name}</div>
-                                                </div>
-                                            </div>
-                                            <div className="font-bold text-primary text-sm">
-                                                견적서 확인
-                                            </div>
-                                        </button>
-                                    ))}
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary">
+                                        <CheckCircle2 className="h-5 w-5" />
+                                    </div>
+                                    <select
+                                        value={selectedModel?.name || ""}
+                                        onChange={(e) => {
+                                            const model = product.models?.find(m => m.name === e.target.value);
+                                            if (model) setSelectedModel(model);
+                                        }}
+                                        className="w-full h-14 pl-12 pr-12 rounded-2xl border-2 border-slate-100 bg-white text-slate-900 font-bold focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none appearance-none transition-all cursor-pointer hover:border-slate-200"
+                                    >
+                                        {product.models.map((model, idx) => (
+                                            <option key={idx} value={model.name}>
+                                                {model.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors">
+                                        <ChevronDown className="h-5 w-5" />
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -254,19 +258,24 @@ export default function ProductDetailPage() {
                             <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary rounded-full" />
                         </h2>
 
-                        {/* Detailed Spec Images */}
-                        {product.specImages && product.specImages.length > 0 && (
-                            <div className="flex flex-col gap-4">
-                                {product.specImages.map((img, idx) => (
-                                    <div key={idx} className="relative w-full overflow-hidden rounded-lg bg-gray-50 border border-slate-100/50">
-                                        <img
-                                            src={img}
-                                            alt={`Spec Detail ${idx + 1}`}
-                                            className="w-full h-auto object-contain block"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
+                        {/* Unified Media Contents (Images & Rich Media) */}
+                        {product.mediaItems && product.mediaItems.length > 0 ? (
+                            <MediaRenderer items={product.mediaItems} />
+                        ) : (
+                            /* Fallback to legacy specImages if mediaItems is empty */
+                            product.specImages && product.specImages.length > 0 && (
+                                <div className="flex flex-col gap-4">
+                                    {product.specImages.map((img, idx) => (
+                                        <div key={idx} className="relative w-full overflow-hidden rounded-lg bg-gray-50 border border-slate-100/50">
+                                            <img
+                                                src={img}
+                                                alt={`Spec Detail ${idx + 1}`}
+                                                className="w-full h-auto object-contain block"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )
                         )}
 
                     </div>

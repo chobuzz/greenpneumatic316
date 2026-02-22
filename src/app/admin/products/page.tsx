@@ -80,9 +80,19 @@ export default function ProductList() {
             p.businessUnitIds?.includes(selectedUnit) ||
             (p as any).businessUnitId === selectedUnit;
 
-        const matchesCategory = selectedCategory === "all" ||
-            p.categoryIds?.includes(selectedCategory) ||
-            (p as any).categoryId === selectedCategory;
+        const matchesCategory = selectedCategory === "all" || (() => {
+            const selectedCat = categories.find(c => c.id === selectedCategory);
+            if (!selectedCat) return false;
+
+            // Get all sub-category IDs recursively
+            const getAllChildIds = (catId: string): string[] => {
+                const children = categories.filter(c => c.parentId === catId);
+                return [catId, ...children.flatMap(child => getAllChildIds(child.id))];
+            };
+
+            const targetIds = getAllChildIds(selectedCategory);
+            return p.categoryIds?.some(id => targetIds.includes(id)) || targetIds.includes((p as any).categoryId);
+        })();
 
         return matchesSearch && matchesUnit && matchesCategory;
     });
@@ -161,9 +171,23 @@ export default function ProductList() {
                                     onChange={(e) => setBulkCategory(e.target.value)}
                                 >
                                     <option value="" className="text-slate-900">선택 안 함</option>
-                                    {categories.filter(c => c.businessUnitId === bulkUnit).map(c => (
-                                        <option key={c.id} value={c.id} className="text-slate-900">{c.name}</option>
-                                    ))}
+                                    {categories
+                                        .filter(c => c.businessUnitId === bulkUnit && !c.parentId)
+                                        .map(parent => (
+                                            <optgroup key={parent.id} label={parent.name}>
+                                                <option value={parent.id} className="text-slate-900">{parent.name} (전체)</option>
+                                                {categories.filter(c => c.parentId === parent.id).map(child => (
+                                                    <optgroup key={child.id} label={`  ㄴ ${child.name}`}>
+                                                        <option value={child.id} className="text-slate-900">  ㄴ {child.name} (전체)</option>
+                                                        {categories.filter(c => c.parentId === child.id).map(grandChild => (
+                                                            <option key={grandChild.id} value={grandChild.id} className="text-slate-900">
+                                                                &nbsp;&nbsp;&nbsp;&nbsp;ㄴㄴ {grandChild.name}
+                                                            </option>
+                                                        ))}
+                                                    </optgroup>
+                                                ))}
+                                            </optgroup>
+                                        ))}
                                 </select>
                             </div>
                         </div>
@@ -247,9 +271,23 @@ export default function ProductList() {
                             onChange={(e) => setSelectedCategory(e.target.value)}
                         >
                             <option value="all">모든 카테고리</option>
-                            {categories.filter(c => selectedUnit === "all" || c.businessUnitId === selectedUnit).map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
+                            {categories
+                                .filter(c => (selectedUnit === "all" || c.businessUnitId === selectedUnit) && !c.parentId)
+                                .map(parent => (
+                                    <optgroup key={parent.id} label={parent.name}>
+                                        <option value={parent.id}>{parent.name} (전체)</option>
+                                        {categories.filter(c => c.parentId === parent.id).map(child => (
+                                            <optgroup key={child.id} label={`  ㄴ ${child.name}`}>
+                                                <option value={child.id}>&nbsp;&nbsp;ㄴ {child.name} (전체)</option>
+                                                {categories.filter(c => c.parentId === child.id).map(grandChild => (
+                                                    <option key={grandChild.id} value={grandChild.id}>
+                                                        &nbsp;&nbsp;&nbsp;&nbsp;ㄴㄴ {grandChild.name}
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        ))}
+                                    </optgroup>
+                                ))}
                         </select>
                     </div>
                 </div>

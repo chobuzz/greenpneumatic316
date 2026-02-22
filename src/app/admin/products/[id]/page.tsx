@@ -6,9 +6,10 @@ import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Upload, X, Plus, Trash2, Image as ImageIcon } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
 import { ImageSelector } from "@/components/ui/image-selector"
-import type { BusinessUnit, Category, ProductModel } from "@/lib/db"
+import { MediaEditor } from "@/components/ui/media-editor"
+import type { BusinessUnit, Category, ProductModel, MediaItem } from "@/lib/db"
 import { Loading } from "@/components/ui/loading"
 
 export default function EditProduct() {
@@ -24,7 +25,9 @@ export default function EditProduct() {
         images: [] as string[],
         specifications: "",
         specImages: [] as string[],
-        models: [] as ProductModel[]
+        models: [] as ProductModel[],
+        mediaItems: [] as MediaItem[],
+        mediaPosition: 'bottom' as 'top' | 'bottom'
     })
 
     const [units, setUnits] = useState<BusinessUnit[]>([])
@@ -61,7 +64,11 @@ export default function EditProduct() {
                         images: data.images || [],
                         specifications: data.specifications || "",
                         specImages: data.specImages || [],
-                        models: formalModels
+                        models: formalModels,
+                        mediaItems: data.mediaItems && data.mediaItems.length > 0
+                            ? data.mediaItems
+                            : (data.specImages || []).map((url: string) => ({ type: 'image', url })),
+                        mediaPosition: data.mediaPosition || 'bottom'
                     })
                     setLoading(false)
                 })
@@ -105,13 +112,6 @@ export default function EditProduct() {
         }))
     }
 
-    const removeSpecImage = (index: number) => {
-        setFormData(prev => ({
-            ...prev,
-            specImages: prev.specImages.filter((_, i) => i !== index)
-        }))
-    }
-
     const addModel = () => {
         setFormData(prev => ({ ...prev, models: [...prev.models, { name: "", price: 0, description: "" }] }))
     }
@@ -138,10 +138,17 @@ export default function EditProduct() {
             const url = isNew ? "/api/products" : `/api/products/${params.id}`
             const method = isNew ? "POST" : "PUT"
 
+            const payload = {
+                ...formData,
+                specImages: formData.mediaItems
+                    .filter(item => item.type === 'image')
+                    .map(item => item.url)
+            }
+
             const res = await fetch(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             })
 
             if (!res.ok) throw new Error("Failed")
@@ -239,17 +246,34 @@ export default function EditProduct() {
                                                         </label>
 
                                                         {categories.filter(c => c.parentId === parent.id).map(child => (
-                                                            <label key={child.id} className="flex items-center gap-3 ml-6 cursor-pointer group">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
-                                                                    checked={formData.categoryIds.includes(child.id)}
-                                                                    onChange={() => toggleCategory(child.id)}
-                                                                />
-                                                                <span className={`text-sm ${formData.categoryIds.includes(child.id) ? "text-primary font-bold" : "text-slate-500"}`}>
-                                                                    ㄴ {child.name}
-                                                                </span>
-                                                            </label>
+                                                            <div key={child.id} className="space-y-2 ml-6">
+                                                                <label className="flex items-center gap-3 cursor-pointer group">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
+                                                                        checked={formData.categoryIds.includes(child.id)}
+                                                                        onChange={() => toggleCategory(child.id)}
+                                                                    />
+                                                                    <span className={`text-sm ${formData.categoryIds.includes(child.id) ? "text-primary font-bold" : "text-slate-500"}`}>
+                                                                        ㄴ {child.name}
+                                                                    </span>
+                                                                </label>
+
+                                                                {/* 3rd Level Category */}
+                                                                {categories.filter(c => c.parentId === child.id).map(grandChild => (
+                                                                    <label key={grandChild.id} className="flex items-center gap-3 ml-6 cursor-pointer group">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
+                                                                            checked={formData.categoryIds.includes(grandChild.id)}
+                                                                            onChange={() => toggleCategory(grandChild.id)}
+                                                                        />
+                                                                        <span className={`text-sm ${formData.categoryIds.includes(grandChild.id) ? "text-primary font-bold" : "text-slate-400"}`}>
+                                                                            ㄴㄴ {grandChild.name}
+                                                                        </span>
+                                                                    </label>
+                                                                ))}
+                                                            </div>
                                                         ))}
                                                     </div>
                                                 ))}
@@ -272,13 +296,12 @@ export default function EditProduct() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1.5 text-gray-700">간략 설명</label>
+                        <label className="block text-sm font-medium mb-1.5 text-gray-700">간략 설명 <span className="text-slate-400 font-medium">(선택)</span></label>
                         <Textarea
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             rows={3}
-                            required
-                            placeholder="상품 목록에 노출될 짧은 설명을 입력하세요."
+                            placeholder="상품 목록에 노출될 짧은 설명을 입력하세요. (비워두면 설명 없이 표시됩니다)"
                         />
                     </div>
                 </section>
@@ -310,9 +333,12 @@ export default function EditProduct() {
                                             <div>
                                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">가격 (원)</label>
                                                 <Input
-                                                    type="number"
-                                                    value={model.price}
-                                                    onChange={(e) => updateModel(i, "price", parseInt(e.target.value) || 0)}
+                                                    type="text"
+                                                    value={model.price.toLocaleString()}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/[^0-9]/g, "");
+                                                        updateModel(i, "price", parseInt(val) || 0);
+                                                    }}
                                                     placeholder="0"
                                                     required
                                                 />
@@ -381,29 +407,24 @@ export default function EditProduct() {
                             onChange={(url) => url && setFormData(prev => ({ ...prev, images: [...prev.images, url] }))}
                         />
                     </div>
-
-                    <div className="space-y-4 pt-4">
-                        <label className="block text-sm font-medium text-gray-700">상세 카탈로그 이미지 (세로 나열)</label>
-                        <div className="space-y-4">
-                            {formData.specImages.map((url, i) => (
-                                <div key={i} className="relative w-full aspect-[3/1] border-2 rounded-xl overflow-hidden group shadow-sm bg-slate-50">
-                                    <img src={url} alt={`Spec ${i}`} className="w-full h-full object-contain" />
-                                    <div className="absolute top-2 right-2">
-                                        <button type="button" onClick={() => removeSpecImage(i)} className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 shadow-md">
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <ImageSelector
-                            label=""
-                            value=""
-                            onChange={(url) => url && setFormData(prev => ({ ...prev, specImages: [...prev.specImages, url] }))}
-                        />
-                    </div>
                 </section>
 
+                {/* Media Section */}
+                <section className="space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-2 mb-1">
+                        <div>
+                            <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                통합 미디어 / 상세 정보 구성
+                            </h3>
+                            <p className="text-sm text-slate-400">상세 이미지, 유튜브 영상, 링크 카드를 원하는 순서대로 자유롭게 배치하세요.</p>
+                        </div>
+                    </div>
+                    <MediaEditor
+                        value={formData.mediaItems}
+                        onChange={(items) => setFormData(prev => ({ ...prev, mediaItems: items }))}
+                    />
+                </section>
 
                 <div className="flex gap-4 pt-10 justify-between items-center sticky bottom-0 bg-white/90 backdrop-blur-sm py-6 border-t z-20">
                     <div className="flex gap-4">

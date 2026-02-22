@@ -26,12 +26,41 @@ export function Navbar() {
         return () => window.removeEventListener("scroll", handleScroll)
     }, [])
 
-    const businessUnits = [
-        { id: "green-science", name: "GREEN SCIENCE", desc: "복합 유체 환경 솔루션", icon: <Pipette className="h-5 w-5" /> },
-        { id: "power-air", name: "POWER AIR", desc: "콤프레샤 및 에어 시스템", icon: <Zap className="h-5 w-5" /> },
-        { id: "vacuum-to-zero", name: "VACUUM TO ZERO", desc: "진공 정밀 제어 솔루션", icon: <Box className="h-5 w-5" /> },
-        { id: "tank-nara", name: "TANK NARA", desc: "고성능 액체 저장 시스템", icon: <Cylinder className="h-5 w-5" /> },
-    ]
+    const [dbBusinessUnits, setDbBusinessUnits] = useState<any[]>([])
+
+    // Icon mapping based on ID
+    const getUnitIcon = (id: string) => {
+        switch (id) {
+            case "green-science": return <Pipette className="h-5 w-5" />;
+            case "power-air": return <Zap className="h-5 w-5" />;
+            case "vacuum-to-zero": return <Box className="h-5 w-5" />;
+            case "tank-nara": return <Cylinder className="h-5 w-5" />;
+            default: return <Box className="h-5 w-5" />;
+        }
+    }
+
+    useEffect(() => {
+        const fetchBUs = async () => {
+            try {
+                const res = await fetch("/api/business-units")
+                if (res.ok) {
+                    const data = await res.json()
+                    setDbBusinessUnits(data)
+                }
+            } catch (err) {
+                console.error("Failed to fetch business units for navbar", err)
+            }
+        }
+        fetchBUs()
+    }, [])
+
+    // Merge DB data with local icons
+    const businessUnits = dbBusinessUnits.map(bu => ({
+        id: bu.id,
+        name: bu.name,
+        desc: bu.description, // Use real description from DB
+        icon: getUnitIcon(bu.id)
+    }))
 
     const navLinks = [
         { name: "사업 분야", href: "/business-units", hasDropdown: true },

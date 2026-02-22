@@ -11,6 +11,15 @@ export interface ProductModel {
     quotationDisabled?: boolean;
 }
 
+export type MediaItemType = 'youtube' | 'embed' | 'link' | 'image';
+
+export interface MediaItem {
+    type: MediaItemType;
+    url: string;
+    title?: string;
+    thumbnail?: string;
+}
+
 export interface Product {
     id: string;
     name: string;
@@ -21,6 +30,8 @@ export interface Product {
     images: string[];
     models?: ProductModel[]; // Multiple model options with price
     specImages?: string[]; // Multiple detail/catalog images
+    mediaItems?: MediaItem[]; // Rich media embeds
+    mediaPosition?: 'top' | 'bottom'; // Position of media relative to spec images
 }
 
 export interface Inquiry {

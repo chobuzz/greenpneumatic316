@@ -32,7 +32,9 @@ export async function GET() {
                 businessUnitName: unit ? unit.name : 'Unknown',
                 images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images || [],
                 models: typeof p.models === 'string' ? JSON.parse(p.models) : p.models || [],
-                specImages: typeof p.specImages === 'string' ? JSON.parse(p.specImages) : p.specImages || []
+                specImages: typeof p.specImages === 'string' ? JSON.parse(p.specImages) : p.specImages || [],
+                mediaItems: typeof p.mediaItems === 'string' ? JSON.parse(p.mediaItems) : p.mediaItems || [],
+                mediaPosition: p.mediaPosition || 'bottom'
             };
         });
         return NextResponse.json(allProducts);
@@ -65,7 +67,9 @@ export async function POST(request: Request) {
             categoryIds: JSON.stringify(finalCatIds),
             images: JSON.stringify(productData.images || []),
             models: JSON.stringify(productData.models || []),
-            specImages: JSON.stringify(productData.specImages || [])
+            specImages: JSON.stringify(productData.specImages || []),
+            mediaItems: JSON.stringify(productData.mediaItems || []),
+            mediaPosition: productData.mediaPosition || 'bottom'
         };
 
         await syncToGoogleSheet('product', newProduct, 'create');

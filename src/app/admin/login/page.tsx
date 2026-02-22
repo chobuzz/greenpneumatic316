@@ -5,21 +5,39 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import Cookies from "js-cookie"
+// Cookies import is no longer needed on client side as the API handles it
+// import Cookies from "js-cookie"
+
 
 export default function AdminLogin() {
     const [password, setPassword] = useState("")
     const [error, setError] = useState("")
+    const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
-        // Simple hardcoded password for demonstration
-        if (password === "admin1234") {
-            Cookies.set("admin_session", "true", { expires: 1 })
-            router.push("/admin")
-        } else {
-            setError("비밀번호가 올바르지 않습니다.")
+        setError("")
+        setIsLoading(true)
+
+        try {
+            const res = await fetch("/api/admin/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password }),
+            })
+
+            const data = await res.json()
+
+            if (res.ok) {
+                router.push("/admin")
+            } else {
+                setError(data.error || "로그인 실패")
+            }
+        } catch (err) {
+            setError("서버와 통신하는 중에 오류가 발생했습니다.")
+        } finally {
+            setIsLoading(false)
         }
     }
 
@@ -38,8 +56,8 @@ export default function AdminLogin() {
                         />
                     </div>
                     {error && <p className="text-red-500 text-sm">{error}</p>}
-                    <Button type="submit" className="w-full">
-                        로그인
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? "로그인 중..." : "로그인"}
                     </Button>
                 </form>
             </div>

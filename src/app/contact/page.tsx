@@ -78,7 +78,7 @@ export default function ContactPage() {
                                 <Clock className="h-6 w-6" />
                             </div>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">빠른 답신</h3>
-                            <p className="text-sm text-slate-500 font-medium">영업일 기준 24시간 이내에 <br />전문가가 직접 연락드립니다.</p>
+                            <p className="text-sm text-slate-500 font-medium">빠르고 신속하게 <br />전문가가 직접 연락드립니다.</p>
                         </div>
                         <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center">
                             <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary mb-6">
@@ -92,7 +92,7 @@ export default function ContactPage() {
                                 <Mail className="h-6 w-6" />
                             </div>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">대량 발주 문의</h3>
-                            <p className="text-sm text-slate-500 font-medium">기관 및 기업 단체 발주를 위한 <br />별도의 혜택을 제안해 드립니다.</p>
+                            <p className="text-sm text-slate-500 font-medium">기관 및 기업 대량 발주를 위한 <br />별도의 혜택을 제안해 드립니다.</p>
                         </div>
                     </div>
                 </div>

@@ -42,7 +42,30 @@ function doPost(e) {
       return handleCrudAction(ss, action, type, data);
     }
 
-    // B. [Legacy] 기존 방식 호환 (action이 없는 경우)
+    // B. [New] 수신거부 처리 (Unsubscribed 시트에 기록)
+    if (type === 'unsubscribe') {
+      const email = data.email;
+      if (!email) return jsonResponse({ result: "error", message: "Email is required" });
+      
+      const unsubSheet = ss.getSheetByName(UNSUBSCRIBE_SHEET_NAME) || ss.insertSheet(UNSUBSCRIBE_SHEET_NAME);
+      
+      // 헤더 없으면 생성
+      if (unsubSheet.getLastRow() === 0) {
+        unsubSheet.appendRow(["Email", "UnsubscribedAt"]);
+      }
+      
+      // 중복 체크
+      const existingEmails = unsubSheet.getDataRange().getValues().slice(1).map(r => r[0]);
+      if (existingEmails.indexOf(email) !== -1) {
+        return jsonResponse({ result: "success", message: "Already unsubscribed" });
+      }
+      
+      const ts = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+      unsubSheet.appendRow([email, ts]);
+      return jsonResponse({ result: "success", message: "Unsubscribed successfully" });
+    }
+
+    // C. [Legacy] 기존 방식 호환 (action이 없는 경우)
     if (type === 'customers') {
       const source = data.source || SOURCE_SHEETS[0];
       var realSource = SOURCE_SHEETS.find(s => s.includes(source)) || source;

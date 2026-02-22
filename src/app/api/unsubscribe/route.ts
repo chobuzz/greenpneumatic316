@@ -10,10 +10,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Email is required' }, { status: 400 });
         }
 
-        // Google Sheets에 수신 거부 목록 추가
-        const syncResult = await syncToGoogleSheet('customers', {
+        // Google Sheets Unsubscribed 시트에 수신 거부 기록
+        const syncResult = await syncToGoogleSheet('unsubscribe', {
             email,
-            unsubscribed: true,
             unsubscribedAt: new Date().toISOString()
         });
 

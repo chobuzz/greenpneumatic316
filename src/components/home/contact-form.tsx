@@ -52,7 +52,7 @@ export function ContactForm() {
                                 </h2>
                                 <p className="text-slate-400 text-lg mb-12 max-w-sm leading-relaxed">
                                     설계 단계부터 유지보수까지, <br />
-                                    그린뉴메틱의 전문가가 24시간 이내에 <br />
+                                    그린뉴메틱 전문가가 신속하게 <br />
                                     최적의 솔루션을 제안해 드립니다.
                                 </p>
 

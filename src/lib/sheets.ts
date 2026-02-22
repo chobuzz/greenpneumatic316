@@ -3,7 +3,7 @@
  * Google Spreadsheet Synchronization Utility
  */
 
-export type SheetEntityType = 'businessUnit' | 'category' | 'product' | 'insight' | 'emailSettings' | 'quotation' | 'inquiry' | 'customers';
+export type SheetEntityType = 'businessUnit' | 'category' | 'product' | 'insight' | 'emailSettings' | 'quotation' | 'inquiry' | 'customers' | 'unsubscribe';
 
 export async function syncToGoogleSheet(
     type: SheetEntityType,

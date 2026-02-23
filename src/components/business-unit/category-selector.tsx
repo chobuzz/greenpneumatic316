@@ -61,17 +61,17 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
         return pCatIds.some(id => allIds.includes(id)) || allIds.includes(pCatId);
     })
 
-    useEffect(() => {
-        if (gridRef.current) {
-            const grid = gridRef.current
-            if (grid.scrollHeight > 500) {
-                setShowMoreBtn(true)
-            } else {
-                setShowMoreBtn(false)
-            }
-            grid.style.maxHeight = isExpanded ? "5000px" : "500px"
-        }
-    }, [activeL1, activeL2, activeL3, isExpanded])
+    // useEffect(() => {
+    //     if (gridRef.current) {
+    //         const grid = gridRef.current
+    //         if (grid.scrollHeight > 500) {
+    //             setShowMoreBtn(true)
+    //         } else {
+    //             setShowMoreBtn(false)
+    //         }
+    //         grid.style.maxHeight = isExpanded ? "5000px" : "500px"
+    //     }
+    // }, [activeL1, activeL2, activeL3, isExpanded])
 
     if (level1.length === 0) return null
 
@@ -80,14 +80,11 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
             <style jsx>{`
                 /* ─── 대분류 탭 바 ─── */
                 .cs-l1-bar {
-                    position: sticky;
-                    top: 60px;
-                    z-index: 20;
-                    background: rgba(255,255,255,0.97);
-                    backdrop-filter: blur(12px);
-                    border-bottom: 1px solid #f1f5f9;
-                    padding: 16px 0;
-                    margin-bottom: 0;
+    position: relative;
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 16px 0;
+    margin-bottom: 0;
                 }
                 .cs-l1-inner {
                     max-width: 80rem;
@@ -226,7 +223,6 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
                     display: grid;
                     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
                     gap: 24px;
-                    overflow: hidden;
                     transition: max-height 0.6s ease;
                 }
                 .cs-card {
@@ -256,9 +252,7 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
                     justify-content: center;
                 }
                 .cs-nav-wrap {
-                    position: sticky;
-                    top: 60px;
-                    z-index: 20;
+                    position: relative;
                 }
             `}</style>
 
@@ -384,7 +378,7 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
 
             {/* 제품 그리드 */}
             <div className="max-w-7xl mx-auto px-4 pt-8">
-                <div ref={gridRef} className="cs-grid" style={{ maxHeight: "500px" }}>
+                <div ref={gridRef} className="cs-grid">
                     {activeProducts.map((product) => (
                         <Link href={`/products/${product.id}`} key={product.id} className="cs-card group">
                             <div className="cs-img-wrap">
@@ -416,7 +410,7 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
                     )}
                 </div>
 
-                {showMoreBtn && (
+                {/* {showMoreBtn && (
                     <div className="text-center mt-10">
                         <button
                             className="inline-flex items-center gap-2 px-8 py-3 rounded-full border-2 border-slate-200 bg-white text-slate-700 font-bold hover:bg-green-600 hover:text-white hover:border-green-600 transition-all text-sm"
@@ -426,7 +420,7 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
                             <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                         </button>
                     </div>
-                )}
+                )} */}
             </div>
         </div>
     )

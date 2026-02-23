@@ -24,16 +24,37 @@ export async function GET() {
             const businessUnitId = businessUnitIds[0] || "";
             const unit = units.find((u: any) => u.id === businessUnitId);
 
+            const safeParseJSON = (data: any) => {
+                if (!data || typeof data !== 'string') return data || [];
+                const trimmed = data.trim();
+                if (trimmed === "") return [];
+
+                // Only try to parse if it looks like a JSON array or object
+                if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                    try {
+                        return JSON.parse(trimmed);
+                    } catch (e) {
+                        // Log a concise warning instead of a full stack trace for malformed data
+                        console.warn(`[API] JSON parsing failed for: ${trimmed.substring(0, 50)}${trimmed.length > 50 ? '...' : ''}`);
+                        return [];
+                    }
+                }
+
+                // If it's a string but doesn't look like JSON, return it as a single-element array (if that's the expectation)
+                // or just wrap it in an array to maintain type consistency
+                return [trimmed];
+            };
+
             return {
                 ...p,
                 businessUnitId,
                 businessUnitIds,
                 categoryIds,
                 businessUnitName: unit ? unit.name : 'Unknown',
-                images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images || [],
-                models: typeof p.models === 'string' ? JSON.parse(p.models) : p.models || [],
-                specImages: typeof p.specImages === 'string' ? JSON.parse(p.specImages) : p.specImages || [],
-                mediaItems: typeof p.mediaItems === 'string' ? JSON.parse(p.mediaItems) : p.mediaItems || [],
+                images: safeParseJSON(p.images),
+                models: safeParseJSON(p.models),
+                specImages: safeParseJSON(p.specImages),
+                mediaItems: safeParseJSON(p.mediaItems),
                 mediaPosition: p.mediaPosition || 'bottom'
             };
         });

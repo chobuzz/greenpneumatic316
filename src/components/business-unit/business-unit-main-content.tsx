@@ -65,17 +65,6 @@ export function BusinessUnitMainContent({ unit, unitCategories }: BusinessUnitMa
 
             <section className="py-12 bg-slate-50/50 relative border-t border-slate-100/50">
                 <div className="container px-4 md:px-8">
-                    <div className="mb-8">
-                        <motion.h3
-                            initial={{ opacity: 0, x: -20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            className="text-2xl font-black text-slate-900 flex items-center gap-4"
-                        >
-                            <span className="w-1.5 h-8 bg-primary rounded-full" />
-                            제품 카탈로그
-                        </motion.h3>
-                    </div>
 
                     {/* Interactive Category Selector */}
                     <CategorySelector

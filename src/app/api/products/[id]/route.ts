@@ -19,6 +19,20 @@ export async function GET(
             return Array.isArray(field) ? field : (field ? [field] : []);
         };
 
+        const safeParseJSON = (data: any) => {
+            if (!data || typeof data !== 'string') return data || [];
+            const trimmed = data.trim();
+            if (trimmed === "" || (!trimmed.startsWith('[') && !trimmed.startsWith('{'))) {
+                return trimmed ? [trimmed] : [];
+            }
+            try {
+                return JSON.parse(trimmed);
+            } catch (e) {
+                console.warn(`[API] Single Product JSON parsing failed: ${trimmed.substring(0, 50)}`);
+                return [];
+            }
+        };
+
         const businessUnitIds = parseField(product.businessUnitIds || product.businessUnitId);
         const categoryIds = parseField(product.categoryIds || product.categoryId);
 
@@ -27,10 +41,10 @@ export async function GET(
             businessUnitId: businessUnitIds[0] || "",
             businessUnitIds,
             categoryIds,
-            images: typeof product.images === 'string' ? JSON.parse(product.images) : product.images || [],
-            models: typeof product.models === 'string' ? JSON.parse(product.models) : product.models || [],
-            specImages: typeof product.specImages === 'string' ? JSON.parse(product.specImages) : product.specImages || [],
-            mediaItems: typeof product.mediaItems === 'string' ? JSON.parse(product.mediaItems) : product.mediaItems || [],
+            images: safeParseJSON(product.images),
+            models: safeParseJSON(product.models),
+            specImages: safeParseJSON(product.specImages),
+            mediaItems: safeParseJSON(product.mediaItems),
             mediaPosition: product.mediaPosition || 'bottom'
         });
     }

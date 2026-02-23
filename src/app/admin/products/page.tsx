@@ -39,9 +39,14 @@ export default function ProductList() {
                 fetch("/api/categories")
             ]);
 
-            const prodData = await prodRes.json();
-            const unitData = await unitRes.json();
-            const catData = await catRes.json();
+            const prodData = prodRes.ok ? await prodRes.json() : [];
+            const unitData = unitRes.ok ? await unitRes.json() : [];
+            const catData = catRes.ok ? await catRes.json() : [];
+
+            // Ensure we have arrays to map over
+            const safeProdData = Array.isArray(prodData) ? prodData : [];
+            const safeUnitData = Array.isArray(unitData) ? unitData : [];
+            const safeCatData = Array.isArray(catData) ? catData : [];
 
             // Enrich products with name metadata for easier filtering
             const enriched = prodData.map((p: any) => {
@@ -59,14 +64,14 @@ export default function ProductList() {
                     ...p,
                     businessUnitIds: buIds,
                     categoryIds: catIds,
-                    businessUnitNames: buIds.map((id: string) => unitData.find((u: any) => u.id === id)?.name).filter(Boolean),
-                    categoryNames: catIds.map((id: string) => catData.find((c: any) => c.id === id)?.name).filter(Boolean)
+                    businessUnitNames: buIds.map((id: string) => safeUnitData.find((u: any) => u.id === id)?.name).filter(Boolean),
+                    categoryNames: catIds.map((id: string) => safeCatData.find((c: any) => c.id === id)?.name).filter(Boolean)
                 }
             });
 
             setProducts(enriched);
-            setUnits(unitData);
-            setCategories(catData);
+            setUnits(safeUnitData);
+            setCategories(safeCatData);
             setLoading(false);
         }
         fetchData();

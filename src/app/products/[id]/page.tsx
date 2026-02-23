@@ -230,12 +230,16 @@ export default function ProductDetailPage() {
                                 </Button>
                                 <Button
                                     size="lg"
-                                    className={`h-14 text-lg rounded-xl shadow-lg transition-all ${selectedModel?.quotationDisabled
+                                    className={`h-14 text-lg rounded-xl shadow-lg transition-all ${(!selectedModel || selectedModel?.quotationDisabled)
                                         ? "bg-slate-400 hover:bg-slate-500 shadow-slate-200"
                                         : "bg-primary hover:bg-primary/90 shadow-primary/20"}`}
                                     onClick={() => {
-                                        if (selectedModel?.quotationDisabled) {
-                                            if (confirm("해당 모델은 온라인 견적 발급이 불가능한 품목입니다.\n문의하기를 통해 상세 내용을 남겨주시면 빠르게 안내해 드리겠습니다.\n문의하기 페이지로 이동하시겠습니까?")) {
+                                        if (!selectedModel || selectedModel?.quotationDisabled) {
+                                            const message = !selectedModel
+                                                ? "해당 상품은 온라인 견적 발급이 불가능한 품목입니다.\n문의하기를 통해 상세 내용을 남겨주시면 빠르게 안내해 드리겠습니다.\n문의하기 페이지로 이동하시겠습니까?"
+                                                : "해당 모델은 온라인 견적 발급이 불가능한 품목입니다.\n문의하기를 통해 상세 내용을 남겨주시면 빠르게 안내해 드리겠습니다.\n문의하기 페이지로 이동하시겠습니까?";
+
+                                            if (confirm(message)) {
                                                 router.push("/contact");
                                             }
                                         } else {

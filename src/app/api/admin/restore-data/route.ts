@@ -96,7 +96,7 @@ export async function POST() {
         console.log("💾 스프레드시트 동기화 중...");
 
         // 5. 스프레드시트 업데이트 (전체 덮어쓰기)
-        const catResult = await syncToGoogleSheet('category', migratedCategories.map(({ oldId, ...rest }) => rest), 'sync');
+        const catResult = await syncToGoogleSheet('category', migratedCategories.map(({ oldId, ...rest }: { oldId: string, [key: string]: any }) => rest), 'sync');
         const prodResult = await syncToGoogleSheet('product', migratedProducts, 'sync');
 
         if (!catResult.success || !prodResult.success) {

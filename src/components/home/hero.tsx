@@ -21,7 +21,7 @@ export function Hero() {
 
     return (
         <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-900">
-            {/* Background Image Slider */}
+            {/* Background Image Sliders */}
             <div className="absolute inset-0 z-0">
                 <AnimatePresence mode="wait">
                     <motion.div

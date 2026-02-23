@@ -173,7 +173,7 @@ export default function CategoryManager() {
                         { label: "중분류", color: "bg-blue-100 text-blue-700 border-blue-200" },
                         { label: "소분류", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
                     ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-1.5">
+                        <div key={`legend-${i}`} className="flex items-center gap-1.5">
                             {i > 0 && <ChevronRight className="h-3 w-3 text-slate-300" />}
                             <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${item.color}`}>{item.label}</span>
                         </div>
@@ -215,8 +215,8 @@ export default function CategoryManager() {
                                 required
                             >
                                 <option value="">사업 분야 선택</option>
-                                {units.map(u => (
-                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                {units.map((u, idx) => (
+                                    <option key={u.id || `unit-opt-${idx}`} value={u.id}>{u.name}</option>
                                 ))}
                             </select>
                         </div>
@@ -233,8 +233,8 @@ export default function CategoryManager() {
                                 disabled={!selectedUnit}
                             >
                                 <option value="">없음 (대분류 생성)</option>
-                                {selectedUnit && getFlatList(categories, selectedUnit).map(({ cat, depth }) => (
-                                    <option key={cat.id} value={cat.id}>
+                                {selectedUnit && getFlatList(categories, selectedUnit).map(({ cat, depth }, idx) => (
+                                    <option key={cat.id || `parent-opt-${idx}`} value={cat.id}>
                                         {depth === 0 ? "" : depth === 1 ? "  └ " : "    └ "}{cat.name} {depth === 0 ? "(대분류)" : depth === 1 ? "(중분류)" : "(소분류)"}
                                     </option>
                                 ))}

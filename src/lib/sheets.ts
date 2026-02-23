@@ -123,20 +123,27 @@ export async function fetchFromGoogleSheet(type: SheetEntityType) {
 
         const data = await response.json()
 
+        // Filter out completely empty rows from Google Sheets
+        const filteredData = Array.isArray(data) ? data.filter((row: any) => {
+            if (!row || typeof row !== 'object') return false;
+            // Check if at least one value in the row is not empty
+            return Object.values(row).some(val => val !== "" && val !== null && val !== undefined);
+        }) : [];
+
         // 이메일 설정의 경우 단일 객체로 변환하여 반환
-        if (type === 'emailSettings' && Array.isArray(data) && data.length > 0) {
+        if (type === 'emailSettings' && filteredData.length > 0) {
             return {
-                ...data[0],
-                isAd: data[0].isAd === true || data[0].isAd === "TRUE" || data[0].isAd === "true"
+                ...filteredData[0],
+                isAd: filteredData[0].isAd === true || filteredData[0].isAd === "TRUE" || filteredData[0].isAd === "true"
             };
         }
 
         // quotation / inquiry: 한글 헤더 → 영문 키 변환
-        if ((type === 'quotation' || type === 'inquiry') && Array.isArray(data)) {
-            return data.map(row => mapKoreanToEnglish(type, row))
+        if ((type === 'quotation' || type === 'inquiry')) {
+            return filteredData.map(row => mapKoreanToEnglish(type, row))
         }
 
-        return Array.isArray(data) ? data : []
+        return filteredData
     } catch (error: any) {
         console.error(`❌ [Sheets] 데이터 로드 실패 (${type}):`, error?.message || error)
         return []

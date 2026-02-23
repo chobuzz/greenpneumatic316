@@ -87,7 +87,9 @@ export interface Quotation {
     company: string;
     phone: string;
     email: string;
-    selectedModel: { name: string, price: number };
+    productName: string;
+    modelName: string;
+    selectedModel?: { name: string, price: number };
     selectedOptions: { groupName: string, name: string, price: number }[];
     quantity: number;
     totalPrice: number;

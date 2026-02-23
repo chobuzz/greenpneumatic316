@@ -168,7 +168,7 @@ export function Navbar() {
                                                                     {businessUnits.map((bu) => (
                                                                         <Link
                                                                             key={bu.id}
-                                                                            href={`/business-units/${bu.id}`}
+                                                                            href={`/business-units?tab=${bu.id}`}
                                                                             className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-transparent hover:border-primary/20 hover:bg-white transition-all group"
                                                                             onClick={() => setIsOpen(false)}
                                                                         >
@@ -280,7 +280,7 @@ export function Navbar() {
                                                         {businessUnits.map((bu) => (
                                                             <Link
                                                                 key={bu.id}
-                                                                href={`/business-units/${bu.id}`}
+                                                                href={`/business-units?tab=${bu.id}`}
                                                                 className="flex items-start gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group/item"
                                                             >
                                                                 <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover/item:bg-primary group-hover/item:text-white transition-all">

@@ -33,7 +33,7 @@ export function BusinessUnits({ units }: BusinessUnitsProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
                     {units.map((unit, index) => (
-                        <Link href={`/business-units/${unit.id}`} key={unit.id} className="block group">
+                        <Link href={`/business-units?tab=${unit.id}`} key={unit.id} className="block group">
                             <motion.div
                                 initial={{ opacity: 0, y: 30 }}
                                 whileInView={{ opacity: 1, y: 0 }}

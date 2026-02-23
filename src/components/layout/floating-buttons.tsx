@@ -29,7 +29,7 @@ export function FloatingButtons() {
     }
 
     return (
-        <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-4 items-end">
+        <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-[100] flex flex-col gap-2 md:gap-4 items-end">
             <AnimatePresence>
                 {isVisible && (
                     <motion.button
@@ -37,9 +37,9 @@ export function FloatingButtons() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.8, y: 20 }}
                         onClick={scrollToTop}
-                        className="w-12 h-12 rounded-full bg-white shadow-xl flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors border border-slate-100"
+                        className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white shadow-xl flex items-center justify-center text-slate-400 hover:text-slate-900 transition-colors border border-slate-100"
                     >
-                        <ChevronUp className="h-6 w-6" />
+                        <ChevronUp className="h-5 w-5 md:h-6 md:w-6" />
                     </motion.button>
                 )}
             </AnimatePresence>
@@ -52,11 +52,11 @@ export function FloatingButtons() {
             >
                 <Link
                     href="/contact"
-                    className="flex items-center gap-3 bg-slate-900 text-white pl-6 pr-5 py-4 rounded-full shadow-2xl hover:bg-slate-800 transition-all hover:scale-105 group"
+                    className="flex items-center gap-2 md:gap-3 bg-slate-900 text-white pl-5 md:pl-6 pr-4 md:pr-5 py-3 md:py-4 rounded-full shadow-2xl hover:bg-slate-800 transition-all hover:scale-105 group"
                 >
-                    <span className="text-sm font-black tracking-tighter uppercase mb-0.5">견적문의</span>
-                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-primary transition-colors">
-                        <FileText className="h-4 w-4" />
+                    <span className="text-xs md:text-sm font-black tracking-tighter uppercase mb-0.5">견적문의</span>
+                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-primary transition-colors">
+                        <FileText className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     </div>
                 </Link>
             </motion.div>
@@ -71,11 +71,11 @@ export function FloatingButtons() {
                     href="https://talk.naver.com/profile/wavv6zl"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 bg-[#03C75A] text-white pl-6 pr-5 py-4 rounded-full shadow-2xl hover:opacity-90 transition-all hover:scale-105 group"
+                    className="flex items-center gap-2 md:gap-3 bg-[#03C75A] text-white pl-5 md:pl-6 pr-4 md:pr-5 py-3 md:py-4 rounded-full shadow-2xl hover:opacity-90 transition-all hover:scale-105 group"
                 >
-                    <span className="text-sm font-black tracking-tighter uppercase mb-0.5">톡톡문의</span>
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                        <MessageCircle className="h-4 w-4" />
+                    <span className="text-xs md:text-sm font-black tracking-tighter uppercase mb-0.5">톡톡문의</span>
+                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                        <MessageCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     </div>
                 </a>
             </motion.div>

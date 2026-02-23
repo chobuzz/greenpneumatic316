@@ -26,6 +26,7 @@ export default function EditProduct() {
         specifications: "",
         specImages: [] as string[],
         models: [] as ProductModel[],
+        optionGroups: [] as { name: string; allowMultiSelect: boolean; options: { name: string; price: number; description?: string }[] }[],
         mediaItems: [] as MediaItem[],
         mediaPosition: 'bottom' as 'top' | 'bottom'
     })
@@ -65,6 +66,7 @@ export default function EditProduct() {
                         specifications: data.specifications || "",
                         specImages: data.specImages || [],
                         models: formalModels,
+                        optionGroups: data.optionGroups || (data.options ? [{ name: "추가 옵션", allowMultiSelect: data.allowMultiSelectOptions || false, options: data.options }] : []),
                         mediaItems: data.mediaItems && data.mediaItems.length > 0
                             ? data.mediaItems
                             : (data.specImages || []).map((url: string) => ({ type: 'image', url })),
@@ -127,6 +129,44 @@ export default function EditProduct() {
             ...prev,
             models: prev.models.filter((_, i) => i !== index)
         }))
+    }
+
+    const addOptionGroup = () => {
+        setFormData(prev => ({
+            ...prev,
+            optionGroups: [...prev.optionGroups, { name: "새 옵션 그룹", allowMultiSelect: false, options: [] }]
+        }))
+    }
+
+    const updateOptionGroup = (groupIndex: number, field: string, value: any) => {
+        const newGroups = [...formData.optionGroups]
+        newGroups[groupIndex] = { ...newGroups[groupIndex], [field]: value }
+        setFormData(prev => ({ ...prev, optionGroups: newGroups }))
+    }
+
+    const removeOptionGroup = (groupIndex: number) => {
+        setFormData(prev => ({
+            ...prev,
+            optionGroups: prev.optionGroups.filter((_, i) => i !== groupIndex)
+        }))
+    }
+
+    const addOption = (groupIndex: number) => {
+        const newGroups = [...formData.optionGroups]
+        newGroups[groupIndex].options.push({ name: "", price: 0, description: "" })
+        setFormData(prev => ({ ...prev, optionGroups: newGroups }))
+    }
+
+    const updateOption = (groupIndex: number, optionIndex: number, field: string, value: any) => {
+        const newGroups = [...formData.optionGroups]
+        newGroups[groupIndex].options[optionIndex] = { ...newGroups[groupIndex].options[optionIndex], [field]: value }
+        setFormData(prev => ({ ...prev, optionGroups: newGroups }))
+    }
+
+    const removeOption = (groupIndex: number, optionIndex: number) => {
+        const newGroups = [...formData.optionGroups]
+        newGroups[groupIndex].options = newGroups[groupIndex].options.filter((_, i) => i !== optionIndex)
+        setFormData(prev => ({ ...prev, optionGroups: newGroups }))
     }
 
 
@@ -375,9 +415,103 @@ export default function EditProduct() {
                                 </div>
                             </div>
                         ))}
-                        {formData.models.length === 0 && (
-                            <div className="text-center py-10 text-gray-400 border-2 border-dashed rounded-xl">
-                                등록된 모델이 없습니다. 견적 시스템을 위해 최소 1개 이상의 모델을 등록하세요.
+                    </div>
+                </section>
+
+                {/* Option Groups Section */}
+                <section className="space-y-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                    <div className="flex justify-between items-center">
+                        <div className="flex flex-col">
+                            <h3 className="text-lg font-semibold">옵션 그룹 관리</h3>
+                            <p className="text-xs text-slate-400">다양한 종류의 옵션 카테고리를 만들 수 있습니다 (예: 색상, 부품 추가 등).</p>
+                        </div>
+                        <Button type="button" variant="outline" size="sm" onClick={addOptionGroup} className="rounded-full bg-white shadow-sm">
+                            <Plus className="h-4 w-4 mr-1.5" /> 그룹 추가
+                        </Button>
+                    </div>
+
+                    <div className="space-y-8">
+                        {formData.optionGroups.map((group, groupIdx) => (
+                            <div key={groupIdx} className="bg-white p-6 rounded-2xl border shadow-sm space-y-6 relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/20" />
+
+                                <div className="flex justify-between items-start gap-4">
+                                    <div className="flex-1 space-y-4">
+                                        <div className="flex flex-col md:flex-row md:items-center gap-4">
+                                            <div className="flex-1">
+                                                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">그룹 이름</label>
+                                                <Input
+                                                    value={group.name}
+                                                    onChange={(e) => updateOptionGroup(groupIdx, "name", e.target.value)}
+                                                    placeholder="예: 필터 구성, 배송 방식"
+                                                    className="font-bold border-slate-200"
+                                                />
+                                            </div>
+                                            <div className="pt-5">
+                                                <label className="flex items-center gap-2 cursor-pointer group bg-slate-50 border px-3 py-1.5 rounded-xl hover:border-primary transition-all">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
+                                                        checked={group.allowMultiSelect}
+                                                        onChange={(e) => updateOptionGroup(groupIdx, "allowMultiSelect", e.target.checked)}
+                                                    />
+                                                    <span className="text-xs font-bold text-slate-600">이 그룹은 중복 선택 가능</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3 pt-2">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-xs font-black text-slate-400 uppercase tracking-wider">세부 옵션 리스트</label>
+                                                <Button type="button" variant="ghost" size="sm" onClick={() => addOption(groupIdx)} className="h-7 text-[10px] font-bold text-primary hover:bg-primary/5 px-2">
+                                                    <Plus className="h-3 w-3 mr-1" /> 옵션 추가
+                                                </Button>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                {group.options.map((option, optIdx) => (
+                                                    <div key={optIdx} className="flex items-center gap-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                                                        <div className="flex-1 grid grid-cols-2 gap-3">
+                                                            <Input
+                                                                value={option.name}
+                                                                onChange={(e) => updateOption(groupIdx, optIdx, "name", e.target.value)}
+                                                                placeholder="옵션명"
+                                                                className="h-9 text-sm bg-white"
+                                                            />
+                                                            <Input
+                                                                type="text"
+                                                                value={option.price.toLocaleString()}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value.replace(/[^0-9]/g, "");
+                                                                    updateOption(groupIdx, optIdx, "price", parseInt(val) || 0);
+                                                                }}
+                                                                placeholder="상승 가격"
+                                                                className="h-9 text-sm bg-white text-right"
+                                                            />
+                                                        </div>
+                                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(groupIdx, optIdx)} className="h-9 w-9 text-slate-300 hover:text-red-500">
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                ))}
+                                                {group.options.length === 0 && (
+                                                    <div className="text-center py-4 text-[10px] text-slate-400 border border-dashed rounded-xl">
+                                                        추가된 옵션이 없습니다.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeOptionGroup(groupIdx)} className="text-slate-300 hover:text-red-500 hover:bg-red-50">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+
+                        {formData.optionGroups.length === 0 && (
+                            <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
+                                <p className="text-sm text-slate-400">설정된 옵션 그룹이 없습니다. '그룹 추가' 버튼을 눌러 시작하세요.</p>
                             </div>
                         )}
                     </div>

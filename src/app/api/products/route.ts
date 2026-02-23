@@ -54,6 +54,7 @@ export async function GET() {
                 images: safeParseJSON(p.images),
                 models: safeParseJSON(p.models),
                 specImages: safeParseJSON(p.specImages),
+                optionGroups: safeParseJSON(p.optionGroups || p.options), // Support migration
                 mediaItems: safeParseJSON(p.mediaItems),
                 mediaPosition: p.mediaPosition || 'bottom'
             };
@@ -77,8 +78,17 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'At least one Business Unit is required' }, { status: 400 });
         }
 
+        const { generateSlug } = await import('@/lib/slug');
+        const existingProducts = await fetchFromGoogleSheet('product') as any[];
+        let baseId = generateSlug(productData.name || "product");
+        let finalId = baseId;
+        let counter = 1;
+        while (existingProducts.some(p => p.id === finalId)) {
+            finalId = `${baseId}-${counter++}`;
+        }
+
         const newProduct = {
-            id: uuidv4(),
+            id: finalId,
             ...productData,
             // Save JSON string to BOTH singular and plural to be safe
             // Plural if user ever adds headers, Singular for current sheet compatibility
@@ -88,6 +98,8 @@ export async function POST(request: Request) {
             categoryIds: JSON.stringify(finalCatIds),
             images: JSON.stringify(productData.images || []),
             models: JSON.stringify(productData.models || []),
+            options: JSON.stringify(productData.options || []), // Deprecated but kept for safety
+            optionGroups: JSON.stringify(productData.optionGroups || []),
             specImages: JSON.stringify(productData.specImages || []),
             mediaItems: JSON.stringify(productData.mediaItems || []),
             mediaPosition: productData.mediaPosition || 'bottom'

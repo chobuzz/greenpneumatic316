@@ -43,6 +43,7 @@ export async function GET(
             categoryIds,
             images: safeParseJSON(product.images),
             models: safeParseJSON(product.models),
+            options: safeParseJSON(product.options),
             specImages: safeParseJSON(product.specImages),
             mediaItems: safeParseJSON(product.mediaItems),
             mediaPosition: product.mediaPosition || 'bottom'
@@ -70,6 +71,7 @@ export async function PUT(
 
         images: Array.isArray(body.images) ? JSON.stringify(body.images) : body.images,
         models: Array.isArray(body.models) ? JSON.stringify(body.models) : body.models,
+        optionGroups: Array.isArray(body.optionGroups) ? JSON.stringify(body.optionGroups) : body.optionGroups,
         specImages: Array.isArray(body.specImages) ? JSON.stringify(body.specImages) : body.specImages,
         mediaItems: Array.isArray(body.mediaItems) ? JSON.stringify(body.mediaItems) : body.mediaItems,
         mediaPosition: body.mediaPosition || 'bottom'

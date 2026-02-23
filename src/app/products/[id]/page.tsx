@@ -20,6 +20,7 @@ export default function ProductDetailPage() {
     const [data, setData] = useState<{ product: Product, unit: BusinessUnit } | null>(null)
     const [loading, setLoading] = useState(true)
     const [selectedModel, setSelectedModel] = useState<ProductModel | null>(null)
+    const [selectedOptions, setSelectedOptions] = useState<{ groupName: string, name: string, price: number }[]>([])
     const [quantity, setQuantity] = useState(1)
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false)
     const [activeImageIndex, setActiveImageIndex] = useState(0)
@@ -64,6 +65,27 @@ export default function ProductDetailPage() {
         if (allImages.length === 0) return
         setActiveImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
     }
+
+    const toggleOption = (groupName: string, option: { name: string, price: number }, allowMulti: boolean) => {
+        setSelectedOptions(prev => {
+            const isAlreadySelected = prev.find(o => o.groupName === groupName && o.name === option.name);
+
+            if (isAlreadySelected) {
+                return prev.filter(o => !(o.groupName === groupName && o.name === option.name));
+            } else {
+                if (allowMulti) {
+                    return [...prev, { ...option, groupName }];
+                } else {
+                    // Replace existing option from the same group
+                    return [...prev.filter(o => o.groupName !== groupName), { ...option, groupName }];
+                }
+            }
+        })
+    }
+
+    const basePrice = selectedModel?.price || 0
+    const optionsPrice = selectedOptions.reduce((acc, opt) => acc + opt.price, 0)
+    const unitPrice = basePrice + optionsPrice
 
     return (
         <div className="min-h-screen pb-20 pt-10">
@@ -191,23 +213,100 @@ export default function ProductDetailPage() {
                             </div>
                         )}
 
-                        {/* Quantity Selection */}
-                        <div className="mb-8 flex items-center justify-between p-4 bg-slate-50 rounded-xl border">
-                            <span className="font-bold text-slate-700">구매 수량</span>
-                            <div className="flex items-center gap-4 bg-white border rounded-lg p-1">
-                                <button
-                                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                    className="p-1 hover:bg-slate-100 rounded text-slate-500"
-                                >
-                                    <Minus className="h-4 w-4" />
-                                </button>
-                                <span className="w-10 text-center font-bold">{quantity}</span>
-                                <button
-                                    onClick={() => setQuantity(q => q + 1)}
-                                    className="p-1 hover:bg-slate-100 rounded text-slate-500"
-                                >
-                                    <Plus className="h-4 w-4" />
-                                </button>
+                        {/* Option Groups Selection */}
+                        {product.optionGroups && product.optionGroups.length > 0 && product.optionGroups.map((group, groupIdx) => (
+                            <div key={groupIdx} className="mb-8 space-y-4">
+                                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+                                    {group.name} {group.allowMultiSelect && <span className="text-[10px] text-primary bg-primary/5 px-2 py-0.5 rounded-full ml-2">중복 선택 가능</span>}
+                                </h3>
+
+                                <div className="space-y-4">
+                                    {/* Dropdown for picking */}
+                                    <div className="relative group">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                                            {group.allowMultiSelect ? <Plus className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
+                                        </div>
+                                        <select
+                                            value=""
+                                            onChange={(e) => {
+                                                const optName = e.target.value;
+                                                if (!optName) return;
+                                                const option = group.options?.find(o => o.name === optName);
+                                                if (!option) return;
+
+                                                toggleOption(group.name, { name: option.name, price: option.price }, group.allowMultiSelect);
+                                                e.target.value = "";
+                                            }}
+                                            className="w-full h-14 pl-12 pr-12 rounded-2xl border-2 border-slate-100 bg-white text-slate-900 font-bold focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none appearance-none transition-all cursor-pointer hover:border-slate-200"
+                                        >
+                                            <option value="">{group.name} 선택...</option>
+                                            {group.options.map((option, idx) => (
+                                                <option key={idx} value={option.name}>
+                                                    {option.name} (선택 가능)
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors">
+                                            <ChevronDown className="h-5 w-5" />
+                                        </div>
+                                    </div>
+
+                                    {/* Selected Options List for this group */}
+                                    {selectedOptions.filter(o => o.groupName === group.name).length > 0 && (
+                                        <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                            {selectedOptions.filter(o => o.groupName === group.name).map((opt, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-primary/20 text-primary shadow-sm animate-in fade-in zoom-in duration-200"
+                                                >
+                                                    <span className="text-[10px] text-slate-400 font-medium">{group.name}:</span>
+                                                    <span className="text-xs font-bold">{opt.name}</span>
+                                                    <button
+                                                        onClick={() => toggleOption(group.name, opt, group.allowMultiSelect)}
+                                                        className="hover:bg-primary/10 rounded-full p-0.5 transition-colors"
+                                                    >
+                                                        <Plus className="h-3 w-3 rotate-45" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Quantity Selection and Price Preview */}
+                        <div className="mb-8 space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border">
+                                <span className="font-bold text-slate-700">구매 수량</span>
+                                <div className="flex items-center gap-4 bg-white border rounded-lg p-1">
+                                    <button
+                                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                                        className="p-1 hover:bg-slate-100 rounded text-slate-500"
+                                    >
+                                        <Minus className="h-4 w-4" />
+                                    </button>
+                                    <span className="w-10 text-center font-bold">{quantity}</span>
+                                    <button
+                                        onClick={() => setQuantity(q => q + 1)}
+                                        className="p-1 hover:bg-slate-100 rounded text-slate-500"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex items-end justify-between px-2">
+                                <div className="space-y-1">
+                                    <p className="text-xs text-slate-400 font-bold uppercase">견적 안내</p>
+                                    <p className="text-sm font-medium text-slate-500">
+                                        상세 모델 및 옵션 가격은 견적서에서 확인 가능합니다.
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase">합계 금액</p>
+                                    <p className="text-2xl font-black text-slate-900 italic">견적서 확인</p>
+                                </div>
                             </div>
                         </div>
 
@@ -284,19 +383,19 @@ export default function ProductDetailPage() {
 
                     </div>
                 </div>
+                {/* Quotation Modal */}
+                {selectedModel && (
+                    <QuotationModal
+                        isOpen={isQuoteModalOpen}
+                        onClose={() => setIsQuoteModalOpen(false)}
+                        product={product}
+                        unitName={unit.name}
+                        selectedModel={selectedModel}
+                        selectedOptions={selectedOptions}
+                        quantity={quantity}
+                    />
+                )}
             </div>
-
-            {/* Quotation Modal */}
-            {selectedModel && (
-                <QuotationModal
-                    isOpen={isQuoteModalOpen}
-                    onClose={() => setIsQuoteModalOpen(false)}
-                    product={product}
-                    unitName={unit.name}
-                    selectedModel={selectedModel}
-                    quantity={quantity}
-                />
-            )}
         </div>
     )
 }

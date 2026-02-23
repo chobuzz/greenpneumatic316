@@ -5,8 +5,12 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Category, BusinessUnit } from "@/lib/db"
+import { Reorder, AnimatePresence, motion } from "framer-motion"
 
-import { Trash2, Plus, Tag, Building2, LayoutGrid, ChevronUp, ChevronDown, Layers, ChevronRight } from "lucide-react"
+import {
+    Trash2, Plus, Tag, Building2, Layers,
+    ChevronRight, GripVertical, Save, RefreshCw
+} from "lucide-react"
 import { Loading } from "@/components/ui/loading"
 
 interface CategoryWithUnit extends Category {
@@ -55,6 +59,8 @@ export default function CategoryManager() {
     const [selectedUnit, setSelectedUnit] = useState("")
     const [selectedParent, setSelectedParent] = useState("")
     const [loading, setLoading] = useState(true)
+    const [hasChanges, setHasChanges] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
 
     const fetchData = async () => {
         const [catRes, unitRes] = await Promise.all([
@@ -67,6 +73,7 @@ export default function CategoryManager() {
         setCategories(catData);
         setUnits(unitData);
         setLoading(false);
+        setHasChanges(false);
     }
 
     useEffect(() => {
@@ -111,53 +118,55 @@ export default function CategoryManager() {
         }
     }
 
-    const handleMove = async (unitId: string, parentId: string | undefined, catId: string, direction: 'up' | 'down') => {
-        const peerCats = categories.filter(c => c.businessUnitId === unitId && (c.parentId || "") === (parentId || ""));
-        const sorted = [...peerCats].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-        const index = sorted.findIndex(c => c.id === catId);
-        if (index === -1) return;
-        if (direction === 'up' && index === 0) return;
-        if (direction === 'down' && index === sorted.length - 1) return;
+    // 드래그 앤 드롭 후 로컬 상태 업데이트
+    const handleReorder = (parentId: string | null, unitId: string, newOrderItems: CategoryWithUnit[]) => {
+        setCategories(prev => {
+            // 다른 카테고리들은 유지하고, 현재 부모와 사업부에 속한 카테고리들만 교체
+            const others = prev.filter(c => c.businessUnitId !== unitId || (c.parentId || "") !== (parentId || ""));
 
-        const newSorted = [...sorted];
-        const swapIndex = direction === 'up' ? index - 1 : index + 1;
-        [newSorted[index], newSorted[swapIndex]] = [newSorted[swapIndex], newSorted[index]];
+            // 새로운 순서에 따라 order 값 업데이트
+            const updated = newOrderItems.map((item, idx) => ({
+                ...item,
+                order: idx
+            }));
 
-        let peerCursor = 0;
-        const finalOrderedIds = categories.map(c => {
-            if (c.businessUnitId === unitId && (c.parentId || "") === (parentId || "")) {
-                return newSorted[peerCursor++].id;
-            }
-            return c.id;
+            setHasChanges(true);
+            return [...others, ...updated].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         });
+    }
 
+    // 변경된 순서 서버에 일괄 저장
+    const handleSaveOrder = async () => {
+        setIsSaving(true);
         try {
+            const orderedIds = categories.map(c => c.id);
             const res = await fetch("/api/categories/reorder", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderedIds: finalOrderedIds })
+                body: JSON.stringify({ orderedIds })
             });
-            if (res.ok) { fetchData(); }
+
+            if (res.ok) {
+                setHasChanges(false);
+                alert("순서가 저장되었습니다.");
+            } else {
+                alert("저장 실패");
+            }
         } catch (err) {
-            alert("순서 변경 실패");
+            alert("저장 실패");
+        } finally {
+            setIsSaving(false);
         }
     }
 
     if (loading) return <Loading />
 
-    // 레벨 label helper
-    const levelLabel = (depth: number) => {
-        if (depth === 0) return { text: "대분류", color: "bg-violet-100 text-violet-700", dot: "bg-violet-400" }
-        if (depth === 1) return { text: "중분류", color: "bg-blue-100 text-blue-700", dot: "bg-blue-400" }
-        return { text: "소분류", color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-400" }
-    }
-
     return (
-        <div className="space-y-10 max-w-6xl">
+        <div className="space-y-10 max-w-6xl relative pb-32">
             {/* 헤더 */}
             <div>
                 <h1 className="text-3xl font-bold text-slate-900">카테고리 관리</h1>
-                <p className="text-slate-500 mt-1">3단계 계층 구조(대분류 → 중분류 → 소분류)로 카테고리를 분류합니다.</p>
+                <p className="text-slate-500 mt-1">3단계 계층 구조를 드래그 앤 드롭으로 간편하게 관리하세요.</p>
                 <div className="flex items-center gap-3 mt-4">
                     {[
                         { label: "대분류", color: "bg-violet-100 text-violet-700 border-violet-200" },
@@ -212,7 +221,7 @@ export default function CategoryManager() {
                             </select>
                         </div>
 
-                        {/* 상위 카테고리 - 대분류/중분류 모두 선택 가능 */}
+                        {/* 상위 카테고리 */}
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                                 <Layers className="h-4 w-4 text-slate-400" /> 상위 카테고리
@@ -230,24 +239,19 @@ export default function CategoryManager() {
                                     </option>
                                 ))}
                             </select>
-                            {selectedParent && (
-                                <p className="text-xs text-slate-400 pl-1">
-                                    선택된 상위 항목 하위에 카테고리가 생성됩니다.
-                                </p>
-                            )}
                         </div>
                     </div>
 
                     {/* 카테고리명 */}
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <Tag className="h-4 w-4 text-slate-400" /> {isBulkMode ? '카테고리 리스트 (줄바꿈으로 구분)' : '카테고리명'}
+                            <Tag className="h-4 w-4 text-slate-400" /> {isBulkMode ? '카테고리 리스트' : '카테고리명'}
                         </label>
                         {isBulkMode ? (
                             <textarea
                                 value={bulkNames}
                                 onChange={(e) => setBulkNames(e.target.value)}
-                                placeholder={"예:\n카테고리 1\n카테고리 2\n카테고리 3"}
+                                placeholder={"예:\n카테고리 1\n카테고리 2"}
                                 required
                                 className="flex min-h-[120px] w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none resize-none"
                             />
@@ -263,14 +267,14 @@ export default function CategoryManager() {
                     </div>
 
                     <div className="flex justify-end">
-                        <Button type="submit" className="h-12 px-8 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-lg shadow-slate-200 transition-all active:scale-95">
+                        <Button type="submit" className="h-12 px-8 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-lg">
                             <Plus className="h-4 w-4 mr-2" /> {isBulkMode ? '대량 생성' : '생성'}
                         </Button>
                     </div>
                 </form>
             </div>
 
-            {/* 카테고리 목록 - 3단계 트리 */}
+            {/* 카테고리 목록 - 트리 */}
             <div className="grid grid-cols-1 gap-12">
                 {units.map(unit => {
                     const tree = buildTree(categories.filter(c => c.businessUnitId === unit.id), undefined)
@@ -278,126 +282,140 @@ export default function CategoryManager() {
 
                     return (
                         <div key={unit.id} className="space-y-6">
-                            {/* 사업 분야 헤더 */}
                             <div className="flex items-center gap-3 pb-3 border-b-2 border-slate-100">
                                 <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white">
                                     <Building2 className="h-5 w-5" />
                                 </div>
-                                <div>
-                                    <h2 className="text-xl font-black text-slate-900">{unit.name}</h2>
-                                    <p className="text-xs text-slate-400">{tree.length}개 대분류</p>
-                                </div>
+                                <h2 className="text-xl font-black text-slate-900">{unit.name}</h2>
                             </div>
 
-                            {/* 대분류 카드들 */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {tree.map((parent, pIdx) => {
-                                    const allParentPeers = tree;
-                                    return (
-                                        <div key={parent.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
-                                            {/* 대분류 헤더 */}
-                                            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-violet-50 to-white">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200">대분류</span>
-                                                    <span className="font-black text-slate-900">{parent.name}</span>
-                                                    {parent.children.length > 0 && (
-                                                        <span className="text-xs text-slate-400">({parent.children.length}개 중분류)</span>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-all disabled:opacity-30"
-                                                        onClick={() => handleMove(unit.id, undefined, parent.id, 'up')}
-                                                        disabled={pIdx === 0}
-                                                    ><ChevronUp className="h-3.5 w-3.5" /></button>
-                                                    <button
-                                                        className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-all disabled:opacity-30"
-                                                        onClick={() => handleMove(unit.id, undefined, parent.id, 'down')}
-                                                        disabled={pIdx === allParentPeers.length - 1}
-                                                    ><ChevronDown className="h-3.5 w-3.5" /></button>
-                                                    <button
-                                                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
-                                                        onClick={() => handleDelete(parent.id)}
-                                                    ><Trash2 className="h-3.5 w-3.5" /></button>
-                                                </div>
+                            <Reorder.Group
+                                axis="y"
+                                values={tree}
+                                onReorder={(newTree) => handleReorder(null, unit.id, newTree)}
+                                className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                            >
+                                {tree.map((parent) => (
+                                    <Reorder.Item
+                                        key={parent.id}
+                                        value={parent}
+                                        className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                                    >
+                                        {/* 대분류 헤더 */}
+                                        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-violet-50 to-white">
+                                            <div className="flex items-center gap-3">
+                                                <GripVertical className="h-4 w-4 text-slate-300 cursor-grab active:cursor-grabbing" />
+                                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200">대분류</span>
+                                                <span className="font-black text-slate-900">{parent.name}</span>
                                             </div>
+                                            <button
+                                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                                                onClick={() => handleDelete(parent.id)}
+                                            ><Trash2 className="h-4 w-4" /></button>
+                                        </div>
 
-                                            {/* 중분류 목록 */}
-                                            <div className="p-4 space-y-3">
-                                                {parent.children.length > 0 ? (
-                                                    parent.children.map((mid, mIdx) => (
-                                                        <div key={mid.id} className="rounded-xl border border-slate-100 bg-slate-50/50 overflow-hidden">
-                                                            {/* 중분류 행 */}
+                                        {/* 중분류 목록 */}
+                                        <div className="p-4 space-y-3">
+                                            {parent.children.length > 0 ? (
+                                                <Reorder.Group
+                                                    axis="y"
+                                                    values={parent.children}
+                                                    onReorder={(newMids) => handleReorder(parent.id, unit.id, newMids)}
+                                                    className="space-y-3"
+                                                >
+                                                    {parent.children.map((mid) => (
+                                                        <Reorder.Item
+                                                            key={mid.id}
+                                                            value={mid}
+                                                            className="rounded-xl border border-slate-100 bg-slate-50/50 overflow-hidden"
+                                                        >
                                                             <div className="px-3 py-2.5 flex items-center justify-between bg-gradient-to-r from-blue-50 to-slate-50 border-b border-slate-100">
                                                                 <div className="flex items-center gap-2">
-                                                                    <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                                                                    <GripVertical className="h-3 w-3 text-slate-300 cursor-grab active:cursor-grabbing" />
                                                                     <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">중분류</span>
                                                                     <span className="text-sm font-bold text-slate-800">{mid.name}</span>
-                                                                    {mid.children.length > 0 && (
-                                                                        <span className="text-xs text-slate-400">({mid.children.length}개 소분류)</span>
-                                                                    )}
                                                                 </div>
-                                                                <div className="flex items-center gap-1">
-                                                                    <button
-                                                                        className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all disabled:opacity-30"
-                                                                        onClick={() => handleMove(unit.id, parent.id, mid.id, 'up')}
-                                                                        disabled={mIdx === 0}
-                                                                    ><ChevronUp className="h-3 w-3" /></button>
-                                                                    <button
-                                                                        className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all disabled:opacity-30"
-                                                                        onClick={() => handleMove(unit.id, parent.id, mid.id, 'down')}
-                                                                        disabled={mIdx === parent.children.length - 1}
-                                                                    ><ChevronDown className="h-3 w-3" /></button>
-                                                                    <button
-                                                                        className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
-                                                                        onClick={() => handleDelete(mid.id)}
-                                                                    ><Trash2 className="h-3 w-3" /></button>
-                                                                </div>
+                                                                <button
+                                                                    className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                                                                    onClick={() => handleDelete(mid.id)}
+                                                                ><Trash2 className="h-3 w-3" /></button>
                                                             </div>
 
                                                             {/* 소분류 목록 */}
-                                                            {mid.children.length > 0 ? (
-                                                                <div className="p-2 flex flex-wrap gap-1.5">
-                                                                    {mid.children.map((leaf, lIdx) => (
-                                                                        <div key={leaf.id} className="group/leaf flex items-center gap-1 bg-white border border-emerald-100 rounded-full px-3 py-1 hover:border-emerald-300 hover:bg-emerald-50 transition-all">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
-                                                                            <span className="text-xs font-semibold text-slate-700">{leaf.name}</span>
-                                                                            <div className="flex items-center gap-0.5 opacity-0 group-hover/leaf:opacity-100 transition-all ml-1">
+                                                            <div className="p-2">
+                                                                {mid.children.length > 0 ? (
+                                                                    <Reorder.Group
+                                                                        axis="x"
+                                                                        values={mid.children}
+                                                                        onReorder={(newLeafs) => handleReorder(mid.id, unit.id, newLeafs)}
+                                                                        className="flex flex-wrap gap-1.5"
+                                                                    >
+                                                                        {mid.children.map((leaf) => (
+                                                                            <Reorder.Item
+                                                                                key={leaf.id}
+                                                                                value={leaf}
+                                                                                className="group/leaf flex items-center gap-1 bg-white border border-emerald-100 rounded-full px-3 py-1 hover:border-emerald-300 hover:bg-emerald-50 transition-all cursor-grab active:cursor-grabbing"
+                                                                            >
+                                                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                                                                                <span className="text-xs font-semibold text-slate-700">{leaf.name}</span>
                                                                                 <button
-                                                                                    className="text-slate-300 hover:text-emerald-600 disabled:opacity-20 transition-all"
-                                                                                    onClick={() => handleMove(unit.id, mid.id, leaf.id, 'up')}
-                                                                                    disabled={lIdx === 0}
-                                                                                ><ChevronUp className="h-3 w-3" /></button>
-                                                                                <button
-                                                                                    className="text-slate-300 hover:text-emerald-600 disabled:opacity-20 transition-all"
-                                                                                    onClick={() => handleMove(unit.id, mid.id, leaf.id, 'down')}
-                                                                                    disabled={lIdx === mid.children.length - 1}
-                                                                                ><ChevronDown className="h-3 w-3" /></button>
-                                                                                <button
-                                                                                    className="text-slate-300 hover:text-red-500 transition-all"
-                                                                                    onClick={() => handleDelete(leaf.id)}
+                                                                                    className="text-slate-300 hover:text-red-500 transition-all ml-1 opacity-0 group-hover/leaf:opacity-100"
+                                                                                    onClick={(e) => { e.stopPropagation(); handleDelete(leaf.id); }}
                                                                                 ><Trash2 className="h-3 w-3" /></button>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            ) : (
-                                                                <p className="text-[11px] text-slate-400 italic text-center py-3">소분류가 없습니다.</p>
-                                                            )}
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-[11px] text-slate-400 italic text-center py-4">중분류가 없습니다.</p>
-                                                )}
-                                            </div>
+                                                                            </Reorder.Item>
+                                                                        ))}
+                                                                    </Reorder.Group>
+                                                                ) : (
+                                                                    <p className="text-[11px] text-slate-400 italic text-center py-2">소분류가 없습니다.</p>
+                                                                )}
+                                                            </div>
+                                                        </Reorder.Item>
+                                                    ))}
+                                                </Reorder.Group>
+                                            ) : (
+                                                <p className="text-[11px] text-slate-400 italic text-center py-4">중분류가 없습니다.</p>
+                                            )}
                                         </div>
-                                    )
-                                })}
-                            </div>
+                                    </Reorder.Item>
+                                ))}
+                            </Reorder.Group>
                         </div>
                     )
                 })}
             </div>
+
+            {/* 하단 플로팅 저장 버튼 */}
+            <AnimatePresence>
+                {hasChanges && (
+                    <motion.div
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-6 py-4 bg-slate-900 text-white rounded-2xl shadow-2xl border border-white/10 backdrop-blur-md"
+                    >
+                        <div className="flex items-center gap-2 pr-4 border-r border-white/20">
+                            <RefreshCw className="h-4 w-4 text-emerald-400 animate-spin-slow" />
+                            <span className="text-sm font-bold">순서가 변경됨</span>
+                        </div>
+                        <Button
+                            onClick={fetchData}
+                            variant="ghost"
+                            className="text-slate-400 hover:text-white"
+                            disabled={isSaving}
+                        >
+                            취소
+                        </Button>
+                        <Button
+                            onClick={handleSaveOrder}
+                            disabled={isSaving}
+                            className="bg-emerald-500 hover:bg-emerald-600 text-white font-black px-8"
+                        >
+                            {isSaving ? "저장 중..." : "변경 사항 저장"}
+                            <Save className="h-4 w-4 ml-2" />
+                        </Button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }

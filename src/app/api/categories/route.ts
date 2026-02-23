@@ -6,8 +6,28 @@ import { v4 as uuidv4 } from 'uuid';
 export async function GET() {
     try {
         const categories = await fetchFromGoogleSheet('category') as any[];
+
+        // Robust parsing for categories
+        const processedCategories = (categories || []).map((c: any) => {
+            const parseField = (field: any) => {
+                if (typeof field === 'string' && (field.startsWith('[') || field.startsWith('{'))) {
+                    try { return JSON.parse(field); } catch (e) { return [field]; }
+                }
+                return Array.isArray(field) ? field : (field ? [field] : "");
+            };
+
+            const buId = parseField(c.businessUnitId);
+            const pId = parseField(c.parentId);
+
+            return {
+                ...c,
+                businessUnitId: Array.isArray(buId) ? buId[0] : buId,
+                parentId: Array.isArray(pId) ? pId[0] : pId
+            };
+        });
+
         // Sort categories by order
-        const sortedCategories = [...categories].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+        const sortedCategories = [...processedCategories].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
         return NextResponse.json(sortedCategories);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 });
@@ -24,6 +44,18 @@ export async function POST(request: Request) {
         }
 
         const categories = await fetchFromGoogleSheet('category') as any[];
+
+        // Generate a meaningful slug based on the name
+        const { generateSlug } = await import('@/lib/slug');
+        let baseId = generateSlug(name);
+        let finalId = baseId;
+
+        // Ensure uniqueness
+        let counter = 1;
+        while (categories.some(c => c.id === finalId)) {
+            finalId = `${baseId}-${counter++}`;
+        }
+
         // Standardize parentId for comparison (treat null/undefined as "")
         const targetParentId = parentId || "";
         const sameLevelCats = categories.filter(c =>
@@ -33,7 +65,7 @@ export async function POST(request: Request) {
         const maxOrder = sameLevelCats.reduce((max, c) => Math.max(max, Number(c.order) || 0), -1);
 
         const newCategory = {
-            id: uuidv4(),
+            id: finalId,
             name,
             businessUnitId,
             parentId: targetParentId,

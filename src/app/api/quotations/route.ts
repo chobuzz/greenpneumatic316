@@ -74,6 +74,9 @@ export async function POST(req: Request) {
                         <h3 style="margin-top: 0; color: #0f172a;">상품 및 견적 정보</h3>
                         <p><b>상품명:</b> ${newQuotation.productName}</p>
                         <p><b>모델명:</b> ${newQuotation.modelName}</p>
+                        ${newQuotation.selectedOptions && newQuotation.selectedOptions.length > 0 ? `
+                        <p><b>선택 옵션:</b> ${newQuotation.selectedOptions.map(o => `${o.name}(+${o.price.toLocaleString()}원)`).join(", ")}</p>
+                        ` : ""}
                         <p><b>수량:</b> ${newQuotation.quantity}개</p>
                         <p><b>총액 (공급가):</b> <span style="font-size: 18px; color: #059669; font-weight: bold;">${newQuotation.totalPrice.toLocaleString()}원</span></p>
                     </div>
@@ -92,6 +95,9 @@ export async function POST(req: Request) {
                 body: `
                     <p>그린뉴메틱을 이용해 주셔서 진심으로 감사드립니다.</p>
                     <p>요청하신 <b>${newQuotation.productName} (${newQuotation.modelName})</b> 상품에 대한 공식 온라인 견적서가 발급되었습니다.</p>
+                    ${newQuotation.selectedOptions && newQuotation.selectedOptions.length > 0 ? `
+                    <p>선택 옵션: ${newQuotation.selectedOptions.map(o => o.name).join(", ")}</p>
+                    ` : ""}
                     <p>첨부된 PDF 파일을 통해 상세 견적 내용을 확인하실 수 있습니다.</p>
                     <br/>
                     <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
@@ -119,6 +125,7 @@ export async function POST(req: Request) {
             email: newQuotation.email,
             productName: newQuotation.productName,
             modelName: newQuotation.modelName,
+            selectedOptions: JSON.stringify(newQuotation.selectedOptions || []),
             quantity: newQuotation.quantity,
             totalPrice: newQuotation.totalPrice,
             unitName: newQuotation.unitName,

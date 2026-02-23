@@ -20,6 +20,18 @@ export interface MediaItem {
     thumbnail?: string;
 }
 
+export interface ProductOptionGroup {
+    name: string;
+    allowMultiSelect: boolean;
+    options: ProductOption[];
+}
+
+export interface ProductOption {
+    name: string;
+    price: number;
+    description?: string;
+}
+
 export interface Product {
     id: string;
     name: string;
@@ -29,6 +41,7 @@ export interface Product {
     specifications?: string; // Markdown or HTML
     images: string[];
     models?: ProductModel[]; // Multiple model options with price
+    optionGroups?: ProductOptionGroup[]; // Multiple groups of options
     specImages?: string[]; // Multiple detail/catalog images
     mediaItems?: MediaItem[]; // Rich media embeds
     mediaPosition?: 'top' | 'bottom'; // Position of media relative to spec images
@@ -74,8 +87,8 @@ export interface Quotation {
     company: string;
     phone: string;
     email: string;
-    productName: string;
-    modelName: string;
+    selectedModel: { name: string, price: number };
+    selectedOptions: { groupName: string, name: string, price: number }[];
     quantity: number;
     totalPrice: number;
     unitName: string;

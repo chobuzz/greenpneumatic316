@@ -15,10 +15,11 @@ interface QuotationModalProps {
     product: Product;
     unitName: string;
     selectedModel: ProductModel;
+    selectedOptions: { groupName: string, name: string, price: number }[];
     quantity: number;
 }
 
-export function QuotationModal({ isOpen, onClose, product, unitName, selectedModel, quantity }: QuotationModalProps) {
+export function QuotationModal({ isOpen, onClose, product, unitName, selectedModel, selectedOptions = [], quantity }: QuotationModalProps) {
     const [userInfo, setUserInfo] = useState({
         name: "",
         company: "",
@@ -32,7 +33,10 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
 
     if (!isOpen) return null;
 
-    const totalPrice = (selectedModel.price || 0) * quantity
+    const basePrice = selectedModel.price || 0
+    const optionsPrice = selectedOptions.reduce((acc, opt) => acc + opt.price, 0)
+    const unitPrice = basePrice + optionsPrice
+    const totalPrice = unitPrice * quantity
     const vat = totalPrice * 0.1
     const finalTotal = totalPrice + vat
 
@@ -79,6 +83,7 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
                     email: userInfo.email,
                     productName: product.name,
                     modelName: selectedModel.name,
+                    selectedOptions: selectedOptions,
                     quantity: quantity,
                     totalPrice: totalPrice,
                     unitName: unitName,
@@ -147,13 +152,18 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
                         <>
                             {/* Selected Item Summary */}
                             <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 flex items-center gap-4">
-                                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 overflow-hidden p-1">
+                                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 overflow-hidden p-1 shrink-0">
                                     <img src={product.images?.[0]} className="w-full h-full object-contain" />
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                     <p className="text-[10px] font-black text-[#10b981] uppercase tracking-widest">{unitName}</p>
-                                    <h3 className="font-bold text-slate-900">{product.name}</h3>
+                                    <h3 className="font-bold text-slate-900 truncate">{product.name}</h3>
                                     <p className="text-xs text-slate-400 font-medium">{selectedModel.name} | {quantity}개</p>
+                                    {selectedOptions.length > 0 && (
+                                        <p className="text-[10px] text-primary font-bold mt-1">
+                                            옵션: {selectedOptions.map(o => `${o.groupName}: ${o.name}`).join(", ")}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -400,6 +410,16 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
                                         <td style={{ padding: '24px 8px' }}>
                                             <div style={{ color: '#0f172a', fontSize: '20px', fontWeight: 900, marginBottom: '4px' }}>{product.name}</div>
                                             <div style={{ color: '#10b981', fontSize: '14px', fontWeight: 700, textTransform: 'uppercase' }}>모델명: {selectedModel.name}</div>
+                                            {selectedOptions.length > 0 && (
+                                                <div style={{ marginTop: '8px', borderTop: '1px dashed #e2e8f0', paddingTop: '8px' }}>
+                                                    {selectedOptions.map((opt, i) => (
+                                                        <div key={i} style={{ fontSize: '13px', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
+                                                            <span>• {opt.groupName}: {opt.name}</span>
+                                                            <span>+{opt.price.toLocaleString()}원</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </td>
                                         <td style={{ padding: '24px 8px', textAlign: 'center', color: '#64748b' }}>EA</td>
                                         <td style={{ padding: '24px 8px', textAlign: 'center', color: '#0f172a', fontWeight: 700, fontSize: '18px' }}>{quantity}</td>

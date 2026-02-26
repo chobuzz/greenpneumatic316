@@ -6,7 +6,7 @@ import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, LayoutGrid, AlertCircle } from "lucide-react"
 import { ImageSelector } from "@/components/ui/image-selector"
 import { MediaEditor } from "@/components/ui/media-editor"
 import type { BusinessUnit, Category, ProductModel, MediaItem } from "@/lib/db"
@@ -26,7 +26,7 @@ export default function EditProduct() {
         specifications: "",
         specImages: [] as string[],
         models: [] as ProductModel[],
-        optionGroups: [] as { name: string; allowMultiSelect: boolean; options: { name: string; price: number; description?: string }[] }[],
+        optionGroups: [] as { name: string; allowMultiSelect: boolean; isRequired?: boolean; options: { name: string; price: number; description?: string }[] }[],
         mediaItems: [] as MediaItem[],
         mediaPosition: 'bottom' as 'top' | 'bottom'
     })
@@ -35,6 +35,12 @@ export default function EditProduct() {
     const [categories, setCategories] = useState<Category[]>([])
     const [loading, setLoading] = useState(!isNew)
     const [saving, setSaving] = useState(false)
+
+    // Bulk Add States
+    const [isBulkModelOpen, setIsBulkModelOpen] = useState(false)
+    const [bulkModelText, setBulkModelText] = useState("")
+    const [bulkOptionGroupId, setBulkOptionGroupId] = useState<number | null>(null)
+    const [bulkOptionText, setBulkOptionText] = useState("")
 
     useEffect(() => {
         Promise.all([
@@ -134,7 +140,7 @@ export default function EditProduct() {
     const addOptionGroup = () => {
         setFormData(prev => ({
             ...prev,
-            optionGroups: [...prev.optionGroups, { name: "새 옵션 그룹", allowMultiSelect: false, options: [] }]
+            optionGroups: [...prev.optionGroups, { name: "새 옵션 그룹", allowMultiSelect: false, isRequired: false, options: [] }]
         }))
     }
 
@@ -167,6 +173,38 @@ export default function EditProduct() {
         const newGroups = [...formData.optionGroups]
         newGroups[groupIndex].options = newGroups[groupIndex].options.filter((_, i) => i !== optionIndex)
         setFormData(prev => ({ ...prev, optionGroups: newGroups }))
+    }
+
+    const bulkAddModels = () => {
+        const lines = bulkModelText.split("\n").filter(l => l.trim() !== "");
+        const newModels: ProductModel[] = lines.map(line => {
+            const parts = line.split("|").map(p => p.trim());
+            return {
+                name: parts[0] || "새 모델",
+                price: parseInt(parts[1]?.replace(/[^0-9]/g, "") ?? "0") || 0,
+                description: parts[2] || ""
+            };
+        });
+        setFormData(prev => ({ ...prev, models: [...prev.models, ...newModels] }));
+        setBulkModelText("");
+        setIsBulkModelOpen(false);
+    }
+
+    const bulkAddOptions = (groupIndex: number) => {
+        const lines = bulkOptionText.split("\n").filter(l => l.trim() !== "");
+        const newOptions = lines.map(line => {
+            const parts = line.split("|").map(p => p.trim());
+            return {
+                name: parts[0] || "새 옵션",
+                price: parseInt(parts[1]?.replace(/[^0-9]/g, "") ?? "0") || 0,
+                description: parts[2] || ""
+            };
+        });
+        const newGroups = [...formData.optionGroups];
+        newGroups[groupIndex].options = [...newGroups[groupIndex].options, ...newOptions];
+        setFormData(prev => ({ ...prev, optionGroups: newGroups }));
+        setBulkOptionText("");
+        setBulkOptionGroupId(null);
     }
 
 
@@ -328,7 +366,7 @@ export default function EditProduct() {
                     <div>
                         <label className="block text-sm font-medium mb-1.5 text-gray-700">상품명</label>
                         <Input
-                            value={formData.name}
+                            value={formData.name || ""}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             required
                             className="text-lg font-semibold"
@@ -338,7 +376,7 @@ export default function EditProduct() {
                     <div>
                         <label className="block text-sm font-medium mb-1.5 text-gray-700">간략 설명 <span className="text-slate-400 font-medium">(선택)</span></label>
                         <Textarea
-                            value={formData.description}
+                            value={formData.description || ""}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             rows={3}
                             placeholder="상품 목록에 노출될 짧은 설명을 입력하세요. (비워두면 설명 없이 표시됩니다)"
@@ -350,10 +388,34 @@ export default function EditProduct() {
                 <section className="space-y-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
                     <div className="flex justify-between items-center">
                         <h3 className="text-lg font-semibold">상품 모델 및 가격 관리</h3>
-                        <Button type="button" variant="outline" size="sm" onClick={addModel} className="rounded-full bg-white shadow-sm">
-                            <Plus className="h-4 w-4 mr-1.5" /> 모델 추가
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => setIsBulkModelOpen(!isBulkModelOpen)} className="rounded-full bg-white shadow-sm text-slate-500">
+                                <LayoutGrid className="h-4 w-4 mr-1.5" /> 대량 추가
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" onClick={addModel} className="rounded-full bg-white shadow-sm border-primary text-primary">
+                                <Plus className="h-4 w-4 mr-1.5" /> 개별 추가
+                            </Button>
+                        </div>
                     </div>
+
+                    {isBulkModelOpen && (
+                        <div className="bg-slate-900 rounded-2xl p-6 text-white space-y-4 animate-in slide-in-from-top-2 duration-300">
+                            <div className="flex items-center gap-2 mb-2">
+                                <AlertCircle className="h-4 w-4 text-emerald-400" />
+                                <p className="text-xs text-slate-300">한 줄에 하나씩 입력: <b>모델명 | 가격 | 설명</b> (구분자 | 필수 아님)</p>
+                            </div>
+                            <Textarea
+                                value={bulkModelText}
+                                onChange={(e) => setBulkModelText(e.target.value)}
+                                placeholder="예:&#10;나사형 15HP | 1500000 | 표준형&#10;피스톤 5HP | 800000 | 저소음 최신형"
+                                className="bg-white/10 border-white/20 text-white placeholder:text-slate-500 h-32"
+                            />
+                            <div className="flex justify-end gap-2">
+                                <Button type="button" variant="ghost" size="sm" onClick={() => { setIsBulkModelOpen(false); setBulkModelText(""); }} className="text-slate-400 hover:text-white">취소</Button>
+                                <Button type="button" size="sm" onClick={bulkAddModels} className="bg-emerald-500 hover:bg-emerald-600 font-bold">모델 일괄 추가</Button>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="space-y-4">
                         {formData.models.map((model, i) => (
@@ -364,7 +426,7 @@ export default function EditProduct() {
                                             <div>
                                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">모델명</label>
                                                 <Input
-                                                    value={model.name}
+                                                    value={model.name || ""}
                                                     onChange={(e) => updateModel(i, "name", e.target.value)}
                                                     placeholder="예: RV-10"
                                                     required
@@ -374,7 +436,7 @@ export default function EditProduct() {
                                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">가격 (원)</label>
                                                 <Input
                                                     type="text"
-                                                    value={model.price.toLocaleString()}
+                                                    value={(model.price || 0).toLocaleString()}
                                                     onChange={(e) => {
                                                         const val = e.target.value.replace(/[^0-9]/g, "");
                                                         updateModel(i, "price", parseInt(val) || 0);
@@ -441,13 +503,22 @@ export default function EditProduct() {
                                             <div className="flex-1">
                                                 <label className="block text-xs font-bold text-gray-400 uppercase mb-1">그룹 이름</label>
                                                 <Input
-                                                    value={group.name}
+                                                    value={group.name || ""}
                                                     onChange={(e) => updateOptionGroup(groupIdx, "name", e.target.value)}
                                                     placeholder="예: 필터 구성, 배송 방식"
                                                     className="font-bold border-slate-200"
                                                 />
                                             </div>
-                                            <div className="pt-5">
+                                            <div className="flex gap-3 pt-5 shrink-0">
+                                                <label className="flex items-center gap-2 cursor-pointer group bg-slate-50 border px-3 py-1.5 rounded-xl hover:border-red-400 transition-all">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 rounded border-red-300 text-red-500 focus:ring-red-500"
+                                                        checked={group.isRequired}
+                                                        onChange={(e) => updateOptionGroup(groupIdx, "isRequired", e.target.checked)}
+                                                    />
+                                                    <span className={`text-xs font-bold ${group.isRequired ? 'text-red-600' : 'text-slate-600'}`}>필수 선택 항목</span>
+                                                </label>
                                                 <label className="flex items-center gap-2 cursor-pointer group bg-slate-50 border px-3 py-1.5 rounded-xl hover:border-primary transition-all">
                                                     <input
                                                         type="checkbox"
@@ -455,7 +526,7 @@ export default function EditProduct() {
                                                         checked={group.allowMultiSelect}
                                                         onChange={(e) => updateOptionGroup(groupIdx, "allowMultiSelect", e.target.checked)}
                                                     />
-                                                    <span className="text-xs font-bold text-slate-600">이 그룹은 중복 선택 가능</span>
+                                                    <span className="text-xs font-bold text-slate-600">중복 선택 가능</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -463,24 +534,45 @@ export default function EditProduct() {
                                         <div className="space-y-3 pt-2">
                                             <div className="flex items-center justify-between">
                                                 <label className="text-xs font-black text-slate-400 uppercase tracking-wider">세부 옵션 리스트</label>
-                                                <Button type="button" variant="ghost" size="sm" onClick={() => addOption(groupIdx)} className="h-7 text-[10px] font-bold text-primary hover:bg-primary/5 px-2">
-                                                    <Plus className="h-3 w-3 mr-1" /> 옵션 추가
-                                                </Button>
+                                                <div className="flex gap-1">
+                                                    <Button type="button" variant="ghost" size="sm" onClick={() => setBulkOptionGroupId(bulkOptionGroupId === groupIdx ? null : groupIdx)} className="h-7 text-[10px] font-bold text-slate-400 hover:text-slate-600 px-2">
+                                                        <LayoutGrid className="h-3 w-3 mr-1" /> 대량 추가
+                                                    </Button>
+                                                    <Button type="button" variant="ghost" size="sm" onClick={() => addOption(groupIdx)} className="h-7 text-[10px] font-bold text-primary hover:bg-primary/5 px-2">
+                                                        <Plus className="h-3 w-3 mr-1" /> 개별 추가
+                                                    </Button>
+                                                </div>
                                             </div>
+
+                                            {bulkOptionGroupId === groupIdx && (
+                                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 shadow-inner animate-in slide-in-from-top-1">
+                                                    <p className="text-[10px] text-slate-400">한 줄에 하나씩 입력: <b>옵션명 | 추가금액 | 설명</b></p>
+                                                    <Textarea
+                                                        value={bulkOptionText}
+                                                        onChange={(e) => setBulkOptionText(e.target.value)}
+                                                        placeholder="예:&#10;2m 에어호스 | 20000&#10;디지털 게이지 | 45000 | 고정밀 센서 포함"
+                                                        className="bg-white h-24 text-xs"
+                                                    />
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button type="button" variant="ghost" size="sm" onClick={() => { setBulkOptionGroupId(null); setBulkOptionText(""); }} className="h-8 text-xs text-slate-400">취소</Button>
+                                                        <Button type="button" size="sm" onClick={() => bulkAddOptions(groupIdx)} className="h-8 text-xs bg-slate-800 text-white font-bold">옵션 일괄 추가</Button>
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             <div className="space-y-2">
                                                 {group.options.map((option, optIdx) => (
                                                     <div key={optIdx} className="flex items-center gap-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
                                                         <div className="flex-1 grid grid-cols-2 gap-3">
                                                             <Input
-                                                                value={option.name}
+                                                                value={option.name || ""}
                                                                 onChange={(e) => updateOption(groupIdx, optIdx, "name", e.target.value)}
                                                                 placeholder="옵션명"
                                                                 className="h-9 text-sm bg-white"
                                                             />
                                                             <Input
                                                                 type="text"
-                                                                value={option.price.toLocaleString()}
+                                                                value={(option.price || 0).toLocaleString()}
                                                                 onChange={(e) => {
                                                                     const val = e.target.value.replace(/[^0-9]/g, "");
                                                                     updateOption(groupIdx, optIdx, "price", parseInt(val) || 0);

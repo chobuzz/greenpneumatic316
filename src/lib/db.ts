@@ -23,6 +23,7 @@ export interface MediaItem {
 export interface ProductOptionGroup {
     name: string;
     allowMultiSelect: boolean;
+    isRequired?: boolean; // Required vs Optional
     options: ProductOption[];
 }
 

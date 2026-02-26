@@ -214,65 +214,73 @@ export default function ProductDetailPage() {
                         )}
 
                         {/* Option Groups Selection */}
-                        {product.optionGroups && product.optionGroups.length > 0 && product.optionGroups.map((group, groupIdx) => (
-                            <div key={groupIdx} className="mb-8 space-y-4">
-                                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">
-                                    {group.name} {group.allowMultiSelect && <span className="text-[10px] text-primary bg-primary/5 px-2 py-0.5 rounded-full ml-2">중복 선택 가능</span>}
-                                </h3>
-
-                                <div className="space-y-4">
-                                    {/* Dropdown for picking */}
-                                    <div className="relative group">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                                            {group.allowMultiSelect ? <Plus className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
-                                        </div>
-                                        <select
-                                            value=""
-                                            onChange={(e) => {
-                                                const optName = e.target.value;
-                                                if (!optName) return;
-                                                const option = group.options?.find(o => o.name === optName);
-                                                if (!option) return;
-
-                                                toggleOption(group.name, { name: option.name, price: option.price }, group.allowMultiSelect);
-                                                e.target.value = "";
-                                            }}
-                                            className="w-full h-14 pl-12 pr-12 rounded-2xl border-2 border-slate-100 bg-white text-slate-900 font-bold focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none appearance-none transition-all cursor-pointer hover:border-slate-200"
-                                        >
-                                            <option value="">{group.name} 선택...</option>
-                                            {group.options.map((option, idx) => (
-                                                <option key={idx} value={option.name}>
-                                                    {option.name} (선택 가능)
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors">
-                                            <ChevronDown className="h-5 w-5" />
-                                        </div>
+                        {product.optionGroups && product.optionGroups.filter(g => g.options && g.options.length > 0).length > 0 && product.optionGroups.map((group, groupIdx) => (
+                            group.options && group.options.length > 0 && (
+                                <div key={groupIdx} className="mb-8 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                            {group.name}
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${group.isRequired ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                                                {group.isRequired ? '필수' : '선택'}
+                                            </span>
+                                            {group.allowMultiSelect && <span className="text-[10px] text-primary bg-primary/5 px-2 py-0.5 rounded-full">중복 가능</span>}
+                                        </h3>
                                     </div>
 
-                                    {/* Selected Options List for this group */}
-                                    {selectedOptions.filter(o => o.groupName === group.name).length > 0 && (
-                                        <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                            {selectedOptions.filter(o => o.groupName === group.name).map((opt, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-primary/20 text-primary shadow-sm animate-in fade-in zoom-in duration-200"
-                                                >
-                                                    <span className="text-[10px] text-slate-400 font-medium">{group.name}:</span>
-                                                    <span className="text-xs font-bold">{opt.name}</span>
-                                                    <button
-                                                        onClick={() => toggleOption(group.name, opt, group.allowMultiSelect)}
-                                                        className="hover:bg-primary/10 rounded-full p-0.5 transition-colors"
-                                                    >
-                                                        <Plus className="h-3 w-3 rotate-45" />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                    <div className="space-y-4">
+                                        {/* Dropdown for picking */}
+                                        <div className="relative group">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                                                {group.allowMultiSelect ? <Plus className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
+                                            </div>
+                                            <select
+                                                value=""
+                                                onChange={(e) => {
+                                                    const optName = e.target.value;
+                                                    if (!optName) return;
+                                                    const option = group.options?.find(o => o.name === optName);
+                                                    if (!option) return;
+
+                                                    toggleOption(group.name, { name: option.name, price: option.price }, group.allowMultiSelect);
+                                                    e.target.value = "";
+                                                }}
+                                                className="w-full h-14 pl-12 pr-12 rounded-2xl border-2 border-slate-100 bg-white text-slate-900 font-bold focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none appearance-none transition-all cursor-pointer hover:border-slate-200"
+                                            >
+                                                <option value="">{group.name}</option>
+                                                {group.options.map((option, idx) => (
+                                                    <option key={idx} value={option.name}>
+                                                        {option.name} (선택 가능)
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors">
+                                                <ChevronDown className="h-5 w-5" />
+                                            </div>
                                         </div>
-                                    )}
+
+                                        {/* Selected Options List for this group */}
+                                        {selectedOptions.filter(o => o.groupName === group.name).length > 0 && (
+                                            <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                {selectedOptions.filter(o => o.groupName === group.name).map((opt, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-primary/20 text-primary shadow-sm animate-in fade-in zoom-in duration-200"
+                                                    >
+                                                        <span className="text-[10px] text-slate-400 font-medium">{group.name}:</span>
+                                                        <span className="text-xs font-bold">{opt.name}</span>
+                                                        <button
+                                                            onClick={() => toggleOption(group.name, opt, group.allowMultiSelect)}
+                                                            className="hover:bg-primary/10 rounded-full p-0.5 transition-colors"
+                                                        >
+                                                            <Plus className="h-3 w-3 rotate-45" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            )
                         ))}
 
                         {/* Quantity Selection and Price Preview */}
@@ -342,6 +350,18 @@ export default function ProductDetailPage() {
                                                 router.push("/contact");
                                             }
                                         } else {
+                                            // 필수 옵션 체크
+                                            const missingRequired = product.optionGroups?.filter(g =>
+                                                g.isRequired &&
+                                                g.options && g.options.length > 0 &&
+                                                !selectedOptions.some(o => o.groupName === g.name)
+                                            );
+
+                                            if (missingRequired && missingRequired.length > 0) {
+                                                alert(`필수 옵션을 선택해주세요:\n${missingRequired.map(g => `• ${g.name}`).join("\n")}`);
+                                                return;
+                                            }
+
                                             setIsQuoteModalOpen(true);
                                         }
                                     }}

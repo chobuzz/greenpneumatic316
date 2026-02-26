@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Trash2, Plus, Search, Filter, ChevronRight, LayoutGrid, List as ListIcon, Building2, Tag } from "lucide-react"
+import { Trash2, Plus, Search, Filter, ChevronRight, LayoutGrid, List as ListIcon, Building2, Tag, Database, RefreshCw } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import type { BusinessUnit, Category, Product } from "@/lib/db"
@@ -30,6 +30,7 @@ export default function ProductList() {
     const [bulkUnit, setBulkUnit] = useState("")
     const [bulkCategory, setBulkCategory] = useState("")
     const [isBulkSaving, setIsBulkSaving] = useState(false)
+    const [isSyncing, setIsSyncing] = useState(false)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -123,6 +124,36 @@ export default function ProductList() {
                         className="h-12 px-6 rounded-xl border-slate-200 font-bold hover:bg-slate-50 transition-all"
                     >
                         <LayoutGrid className="h-5 w-5 mr-2" /> 대량 등록
+                    </Button>
+                    <Button
+                        onClick={async () => {
+                            if (!confirm("모든 상품의 외부 이미지를 우리 서버로 다운로드하여 백업하시겠습니까?\n이미지 수에 따라 시간이 다소 소요될 수 있습니다.")) return;
+                            setIsSyncing(true);
+                            try {
+                                const res = await fetch("/api/admin/sync-images", { method: "POST" });
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert(`백업 완료! ${data.message}`);
+                                    window.location.reload();
+                                } else {
+                                    alert(`백업 실패: ${data.error}`);
+                                }
+                            } catch (e) {
+                                alert("통신 오류가 발생했습니다.");
+                            } finally {
+                                setIsSyncing(false);
+                            }
+                        }}
+                        disabled={isSyncing}
+                        variant="outline"
+                        className="h-12 px-6 rounded-xl border-slate-200 font-bold hover:bg-slate-50 transition-all text-emerald-600 hover:text-emerald-700"
+                    >
+                        {isSyncing ? (
+                            <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                        ) : (
+                            <Database className="h-5 w-5 mr-2" />
+                        )}
+                        {isSyncing ? "백업 중..." : "이미지 로컬 백업"}
                     </Button>
                 </div>
             </div>

@@ -409,7 +409,10 @@ export function QuotationModal({ isOpen, onClose, product, unitName, selectedMod
                                         <td style={{ padding: '24px 8px', textAlign: 'center', color: '#cbd5e1', fontWeight: 700 }}>01</td>
                                         <td style={{ padding: '24px 8px' }}>
                                             <div style={{ color: '#0f172a', fontSize: '20px', fontWeight: 900, marginBottom: '4px' }}>{product.name}</div>
-                                            <div style={{ color: '#10b981', fontSize: '14px', fontWeight: 700, textTransform: 'uppercase' }}>모델명: {selectedModel.name}</div>
+                                            <div style={{ color: '#10b981', fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span>모델명: {selectedModel.name}</span>
+                                                <span style={{ fontSize: '13px', color: '#64748b' }}>단가: {selectedModel.price.toLocaleString()}원</span>
+                                            </div>
                                             {selectedOptions.length > 0 && (
                                                 <div style={{ marginTop: '8px', borderTop: '1px dashed #e2e8f0', paddingTop: '8px' }}>
                                                     {selectedOptions.map((opt, i) => (

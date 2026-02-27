@@ -101,13 +101,38 @@ function doPost(e) {
       saveSettings(ss, data);
     } else if (isQuote) {
       sheet.appendRow([timestamp, data.customerName, data.company || "-", data.phone, data.email, data.productName, data.modelName, data.quantity, data.totalPrice, data.unitName, data.마케팅동의, data.id]);
+      upsertToMasterList(ss, data.email, data.company || data.customerName, "견적발급", timestamp);
     } else if (type === 'inquiry') {
       sheet.appendRow([timestamp, data.name, data.company || "-", data.phone, data.email, data.subject, data.message, data.마케팅동의, data.id]);
+      upsertToMasterList(ss, data.email, data.company || data.name, "상담문의", timestamp);
     }
     
     return jsonResponse({ result: "success" });
   } catch (err) {
     return jsonResponse({ result: "error", message: err.toString() });
+  }
+}
+
+/**
+ * 1.5 [New] MasterList 이메일 중복 체크 및 갱신
+ */
+function upsertToMasterList(ss, email, name, source, timestamp) {
+  if (!email) return; // 이메일 필드 누락 시 패스
+  
+  let master = ss.getSheetByName(MASTER_SHEET_NAME);
+  if (!master) {
+    master = ss.insertSheet(MASTER_SHEET_NAME);
+    master.appendRow(["Email", "Name", "Source", "LastSent"]);
+  } else if (master.getLastRow() === 0) {
+    master.appendRow(["Email", "Name", "Source", "LastSent"]);
+  }
+
+  const existingEmails = master.getDataRange().getValues().slice(1).map(r => String(r[0]).toLowerCase().trim());
+  const incomingEmail = String(email).toLowerCase().trim();
+
+  // 중복된 이메일이 아닐 경우에만 하단에 새 행 추가
+  if (existingEmails.indexOf(incomingEmail) === -1) {
+    master.appendRow([email, name || "고객", source, ""]);
   }
 }
 

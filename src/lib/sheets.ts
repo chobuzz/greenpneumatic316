@@ -19,9 +19,9 @@ export async function syncToGoogleSheet(
 
     console.log(`📡 [Sheets] ${type} (${action}) 작업 시작...`)
 
-    // quotation/inquiry는 GAS Legacy 경로(appendRow)를 통해 정확한 컬럼에 저장
+    // quotation/inquiry/customers는 GAS Legacy 경로(appendRow)를 통해 정확한 컬럼에 저장
     // action을 포함하면 handleCrudAction으로 이동해 헤더 매핑이 꼬이므로 제외
-    const isLegacyType = type === 'quotation' || type === 'inquiry'
+    const isLegacyType = type === 'quotation' || type === 'inquiry' || type === 'customers'
     const body = isLegacyType
         ? JSON.stringify({ type, data })
         : JSON.stringify({ action, type, data })

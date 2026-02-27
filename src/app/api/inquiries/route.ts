@@ -69,6 +69,8 @@ ${newInquiry.message}
         }
         await syncToGoogleSheet('inquiry', sheetData)
 
+        // MasterList 연동 로직은 Apps Script 기반으로 이관됨
+
         return NextResponse.json(newInquiry)
     } catch (error) {
         console.error("Inquiry save error:", error)

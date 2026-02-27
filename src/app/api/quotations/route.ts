@@ -134,6 +134,8 @@ export async function POST(req: Request) {
         }
         await syncToGoogleSheet('quotation', sheetData)
 
+        // MasterList 연동 로직은 Apps Script 기반으로 이관됨
+
         return NextResponse.json(newQuotation)
     } catch (error) {
         console.error("Quotation save error:", error)

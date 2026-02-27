@@ -125,7 +125,7 @@ export async function POST(req: Request) {
             email: newQuotation.email,
             productName: newQuotation.productName,
             modelName: newQuotation.modelName,
-            selectedOptions: JSON.stringify(newQuotation.selectedOptions || []),
+            selectedOptions: JSON.stringify(newQuotation.selectedOptions || []), // id는 선택적
             quantity: newQuotation.quantity,
             totalPrice: newQuotation.totalPrice,
             unitName: newQuotation.unitName,

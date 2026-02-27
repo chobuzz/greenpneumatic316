@@ -20,7 +20,7 @@ export default function ProductDetailPage() {
     const [data, setData] = useState<{ product: Product, unit: BusinessUnit } | null>(null)
     const [loading, setLoading] = useState(true)
     const [selectedModel, setSelectedModel] = useState<ProductModel | null>(null)
-    const [selectedOptions, setSelectedOptions] = useState<{ groupName: string, name: string, price: number }[]>([])
+    const [selectedOptions, setSelectedOptions] = useState<{ id: number, groupName: string, name: string, price: number }[]>([])
     const [quantity, setQuantity] = useState(1)
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false)
     const [activeImageIndex, setActiveImageIndex] = useState(0)
@@ -66,21 +66,20 @@ export default function ProductDetailPage() {
         setActiveImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
     }
 
-    const toggleOption = (groupName: string, option: { name: string, price: number }, allowMulti: boolean) => {
+    const addOption = (groupName: string, option: { name: string, price: number }, allowMulti: boolean) => {
         setSelectedOptions(prev => {
-            const isAlreadySelected = prev.find(o => o.groupName === groupName && o.name === option.name);
-
-            if (isAlreadySelected) {
-                return prev.filter(o => !(o.groupName === groupName && o.name === option.name));
+            const newOption = { ...option, groupName, id: Date.now() + Math.random() };
+            if (allowMulti) {
+                return [...prev, newOption];
             } else {
-                if (allowMulti) {
-                    return [...prev, { ...option, groupName }];
-                } else {
-                    // Replace existing option from the same group
-                    return [...prev.filter(o => o.groupName !== groupName), { ...option, groupName }];
-                }
+                // 단일 선택일 경우 동일 그룹 내 기존 옵션들 제거 후 새 옵션 추가
+                return [...prev.filter(o => o.groupName !== groupName), newOption];
             }
-        })
+        });
+    }
+
+    const removeOption = (idToRemove: number) => {
+        setSelectedOptions(prev => prev.filter(o => o.id !== idToRemove));
     }
 
     const basePrice = selectedModel?.price || 0
@@ -241,7 +240,7 @@ export default function ProductDetailPage() {
                                                     const option = group.options?.find(o => o.name === optName);
                                                     if (!option) return;
 
-                                                    toggleOption(group.name, { name: option.name, price: option.price }, group.allowMultiSelect);
+                                                    addOption(group.name, { name: option.name, price: option.price }, group.allowMultiSelect);
                                                     e.target.value = "";
                                                 }}
                                                 className="w-full h-14 pl-12 pr-12 rounded-2xl border-2 border-slate-100 bg-white text-slate-900 font-bold focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none appearance-none transition-all cursor-pointer hover:border-slate-200"
@@ -269,7 +268,7 @@ export default function ProductDetailPage() {
                                                         <span className="text-[10px] text-slate-400 font-medium">{group.name}:</span>
                                                         <span className="text-xs font-bold">{opt.name}</span>
                                                         <button
-                                                            onClick={() => toggleOption(group.name, opt, group.allowMultiSelect)}
+                                                            onClick={() => removeOption(opt.id)}
                                                             className="hover:bg-primary/10 rounded-full p-0.5 transition-colors"
                                                         >
                                                             <Plus className="h-3 w-3 rotate-45" />

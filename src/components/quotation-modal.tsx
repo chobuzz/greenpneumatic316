@@ -15,7 +15,7 @@ interface QuotationModalProps {
     product: Product;
     unitName: string;
     selectedModel: ProductModel;
-    selectedOptions: { groupName: string, name: string, price: number }[];
+    selectedOptions: { id: number, groupName: string, name: string, price: number }[];
     quantity: number;
 }
 

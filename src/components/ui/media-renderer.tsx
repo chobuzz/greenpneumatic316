@@ -88,7 +88,7 @@ function LinkCard({ item }: { item: MediaItem }) {
             className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:border-emerald-200 hover:-translate-y-0.5 transition-all overflow-hidden group"
         >
             {/* 썸네일 */}
-            {item.thumbnail ? (
+            {item.thumbnail && item.thumbnail.trim() !== "" ? (
                 <div className="relative w-28 h-20 flex-shrink-0 bg-slate-50 overflow-hidden">
                     <Image src={item.thumbnail} alt={item.title || ""} fill className="object-cover" />
                 </div>
@@ -132,17 +132,21 @@ export function MediaRenderer({ items }: MediaRendererProps) {
 }
 
 function ImageCard({ item }: { item: MediaItem }) {
+    if (!item.url || item.url.trim() === "") return null
+
     return (
-        <div className="relative w-full overflow-hidden rounded-2xl bg-gray-50 border border-slate-100/50 group">
-            <div className="relative w-full" style={{ aspectRatio: 'auto', minHeight: '300px' }}>
-                <Image
-                    src={item.url}
-                    alt={item.title || "Product Detail"}
-                    fill
-                    className="object-contain transition-transform duration-500 group-hover:scale-[1.01]"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
-                />
-            </div>
+        <div className="relative w-full overflow-hidden rounded-2xl bg-gray-50 border border-slate-100/50 group mb-10">
+            <Image
+                src={item.url}
+                alt={item.title || "Product Detail"}
+                width={0}
+                height={0}
+                sizes="100vw"
+                style={{ width: '100%', height: 'auto' }}
+                className="block transition-transform duration-500 group-hover:scale-[1.01]"
+                unoptimized
+                priority
+            />
             {item.title && (
                 <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md p-3 rounded-xl border border-white/20 shadow-lg animate-in fade-in slide-in-from-bottom-2">
                     <p className="text-sm font-bold text-slate-800">{item.title}</p>

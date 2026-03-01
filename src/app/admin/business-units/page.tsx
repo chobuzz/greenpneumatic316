@@ -45,6 +45,7 @@ export default function BusinessUnitList() {
                                     alt={unit.name}
                                     fill
                                     className="object-cover"
+                                    unoptimized
                                 />
                             )}
                         </div>

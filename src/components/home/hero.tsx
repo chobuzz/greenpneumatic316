@@ -41,7 +41,7 @@ export function Hero() {
                             priority={currentIndex === 0}
                             className="object-cover"
                             sizes="100vw"
-                            quality={90}
+                            unoptimized
                         />
                     </motion.div>
                 </AnimatePresence>

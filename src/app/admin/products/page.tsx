@@ -400,6 +400,7 @@ export default function ProductList() {
                                         alt={product.name}
                                         fill
                                         className="object-contain p-4 group-hover:scale-110 transition-transform duration-500"
+                                        unoptimized
                                     />
                                 ) : (
                                     <div className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">No Image</div>

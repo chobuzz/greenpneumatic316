@@ -39,6 +39,7 @@ export function BusinessUnitMainContent({ unit, unitCategories }: BusinessUnitMa
                                         alt={unit.name}
                                         fill
                                         className="object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+                                        unoptimized
                                     />
                                 </div>
                             </motion.div>
@@ -90,6 +91,7 @@ export function BusinessUnitMainContent({ unit, unitCategories }: BusinessUnitMa
                                                         alt={product.name}
                                                         fill
                                                         className="object-cover group-hover:scale-105 transition-transform duration-700"
+                                                        unoptimized
                                                     />
                                                 ) : (
                                                     <div className="flex items-center justify-center h-full text-slate-300 font-bold text-xs uppercase tracking-widest">

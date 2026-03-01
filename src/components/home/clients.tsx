@@ -49,6 +49,7 @@ export function Clients() {
                                     alt={`Client Logo ${index + 1}`}
                                     fill
                                     className="object-contain"
+                                    unoptimized
                                 />
                             </div>
                         </motion.div>

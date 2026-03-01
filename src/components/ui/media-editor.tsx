@@ -133,7 +133,7 @@ export function MediaEditor({ value = [], onChange }: MediaEditorProps) {
                                 </div>
 
                                 {/* Image 미리보기 */}
-                                {item.type === 'image' && (
+                                {item.type === 'image' && item.url && item.url.trim() !== "" && (
                                     <div className="relative rounded-lg overflow-hidden border border-slate-200 bg-slate-50 mb-2">
                                         <img src={item.url} alt="Preview" className="w-full h-auto block" />
                                     </div>
@@ -167,7 +167,7 @@ export function MediaEditor({ value = [], onChange }: MediaEditorProps) {
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block flex items-center gap-1">
                                             <ImageIcon className="h-3 w-3" /> 썸네일/커버 이미지 (선택)
                                         </label>
-                                        {item.thumbnail && (
+                                        {item.thumbnail && item.thumbnail.trim() !== "" && (
                                             <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-slate-200 mb-2">
                                                 <img src={item.thumbnail} alt="thumbnail" className="w-full h-full object-cover" />
                                                 <button

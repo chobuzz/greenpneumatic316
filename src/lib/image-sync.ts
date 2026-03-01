@@ -23,10 +23,20 @@ export async function downloadExternalImage(url: string, cache?: Map<string, str
 
         console.log(`[ImageSync] Downloading: ${url}`);
 
+        // [High-res Fix] Google Drive/UserContent URL인 경우 해상도 제한 파라미터가 있다면 원본으로 변경 시도
+        let targetUrl = url;
+        if (url.includes('googleusercontent.com') || url.includes('drive-viewer')) {
+            // =s300, =w300-h300 등을 =s0 (원본)으로 변경하거나 제거
+            targetUrl = url.replace(/=s\d+/, '=s0').replace(/=w\d+-h\d+/, '=s0');
+            if (targetUrl !== url) {
+                console.log(`[ImageSync] URL converted to high-res: ${targetUrl}`);
+            }
+        }
+
         // 2. 이미지 데이터 가져오기
-        const response = await fetch(url, {
+        const response = await fetch(targetUrl, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (compatible; GreenPneumaticBot/1.0)'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
         });
 

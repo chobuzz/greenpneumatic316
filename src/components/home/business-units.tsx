@@ -47,6 +47,7 @@ export function BusinessUnits({ units }: BusinessUnitsProps) {
                                         alt={unit.name}
                                         fill
                                         className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                        unoptimized
                                     />
                                     <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <div className="absolute top-8 right-8 z-20 h-12 w-12 rounded-2xl glass flex items-center justify-center opacity-0 group-hover:opacity-100 -translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg">

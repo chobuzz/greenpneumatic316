@@ -93,7 +93,7 @@ export function Navbar() {
                         >
                             {/* Header in Menu */}
                             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                                <Image src="/GREENPNEUMATIC_logo.png" alt="Logo" width={140} height={30} className="object-contain" />
+                                <Image src="/GREENPNEUMATIC_logo.png" alt="Logo" width={140} height={30} className="object-contain" unoptimized />
                                 <button
                                     onClick={() => setIsOpen(false)}
                                     className="p-2 rounded-xl h-10 w-10 bg-slate-900 text-white flex items-center justify-center hover:bg-slate-800 transition-colors"
@@ -229,6 +229,7 @@ export function Navbar() {
                                 fill
                                 className="object-contain"
                                 priority
+                                unoptimized
                             />
                         </div>
                     </Link>

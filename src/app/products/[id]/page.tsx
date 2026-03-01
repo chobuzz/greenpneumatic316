@@ -9,6 +9,7 @@ import { ArrowLeft, CheckCircle2, ShoppingCart, FileText, Minus, Plus, ChevronLe
 import { useParams, useRouter } from "next/navigation"
 import type { Product, BusinessUnit, ProductModel } from "@/lib/db"
 import { Loading } from "@/components/ui/loading"
+import { ProductDetailSkeleton } from "@/components/product/product-detail-skeleton"
 import { QuotationModal } from "@/components/quotation-modal"
 import { MediaRenderer } from "@/components/ui/media-renderer"
 
@@ -50,11 +51,11 @@ export default function ProductDetailPage() {
             })
     }, [id])
 
-    if (loading) return <Loading />
+    if (loading) return <ProductDetailSkeleton />
     if (!data) return <div className="min-h-screen flex items-center justify-center">상품을 찾을 수 없습니다.</div>
 
     const { product, unit } = data
-    const allImages = product.images || []
+    const allImages = (product.images || []).filter(img => typeof img === 'string' && img.trim() !== "")
 
     const nextImage = () => {
         if (allImages.length === 0) return
@@ -105,9 +106,10 @@ export default function ProductDetailPage() {
                                         fill
                                         className="object-contain p-8 transition-all duration-500 ease-in-out"
                                         priority
+                                        unoptimized
                                     />
 
-                                    {/* Navigation Arrows */}
+                                    {/* ... existing code for navigation and counter ... */}
                                     {allImages.length > 1 && (
                                         <>
                                             <button
@@ -123,7 +125,6 @@ export default function ProductDetailPage() {
                                                 <ChevronRight className="h-6 w-6" />
                                             </button>
 
-                                            {/* Image Counter */}
                                             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-900/80 text-white text-[10px] font-bold tracking-widest backdrop-blur">
                                                 {activeImageIndex + 1} / {allImages.length}
                                             </div>
@@ -158,6 +159,7 @@ export default function ProductDetailPage() {
                                                 alt={`${product.name} thumbnail ${idx + 1}`}
                                                 fill
                                                 className="object-contain"
+                                                unoptimized
                                             />
                                         </div>
                                     </button>
@@ -386,13 +388,18 @@ export default function ProductDetailPage() {
                         ) : (
                             /* Fallback to legacy specImages if mediaItems is empty */
                             product.specImages && product.specImages.length > 0 && (
-                                <div className="flex flex-col gap-4">
+                                <div className="flex flex-col gap-10">
                                     {product.specImages.map((img, idx) => (
-                                        <div key={idx} className="relative w-full overflow-hidden rounded-lg bg-gray-50 border border-slate-100/50">
-                                            <img
+                                        <div key={idx} className="relative w-full overflow-hidden rounded-2xl bg-gray-50 border border-slate-100/50">
+                                            <Image
                                                 src={img}
                                                 alt={`Spec Detail ${idx + 1}`}
-                                                className="w-full h-auto object-contain block"
+                                                width={0}
+                                                height={0}
+                                                sizes="100vw"
+                                                style={{ width: '100%', height: 'auto' }}
+                                                className="block"
+                                                unoptimized
                                             />
                                         </div>
                                     ))}

@@ -8,11 +8,57 @@ import { Trash2, Plus, Search, Filter, ChevronRight, LayoutGrid, List as ListIco
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import type { BusinessUnit, Category, Product } from "@/lib/db"
-import { Loading } from "@/components/ui/loading"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface ProductWithMetadata extends Product {
     businessUnitNames: string[]
     categoryNames: string[]
+}
+
+function ProductListSkeleton() {
+    return (
+        <div className="space-y-8 max-w-6xl mx-auto">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <Skeleton className="h-10 w-48 mb-2" />
+                    <Skeleton className="h-5 w-64" />
+                </div>
+                <div className="flex items-center gap-3">
+                    <Skeleton className="h-12 w-32 rounded-xl" />
+                    <Skeleton className="h-12 w-32 rounded-xl" />
+                    <Skeleton className="h-12 w-40 rounded-xl" />
+                </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Skeleton className="h-11 rounded-xl" />
+                    <Skeleton className="h-11 rounded-xl" />
+                    <Skeleton className="h-11 rounded-xl" />
+                </div>
+                <div className="flex items-center justify-between pt-2">
+                    <Skeleton className="h-4 w-32" />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="bg-white rounded-3xl border border-slate-200 p-5 h-[400px]">
+                        <Skeleton className="aspect-square w-full rounded-2xl mb-5" />
+                        <div className="space-y-3">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-1/2" />
+                        </div>
+                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-50">
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="h-9 w-24 rounded-xl" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
 }
 
 export default function ProductList() {
@@ -103,7 +149,7 @@ export default function ProductList() {
         return matchesSearch && matchesUnit && matchesCategory;
     });
 
-    if (loading) return <Loading />
+    if (loading) return <ProductListSkeleton />
 
     return (
         <div className="space-y-8 max-w-6xl mx-auto">
@@ -360,7 +406,7 @@ export default function ProductList() {
                                 )}
 
                                 <div className="absolute top-3 left-3 flex flex-wrap gap-1">
-                                    {product.businessUnitNames.slice(0, 2).map((name, i) => (
+                                    {product.businessUnitNames.slice(0, 2).map((name: string, i: number) => (
                                         <span key={i} className="px-2 py-1 rounded-md bg-white/90 backdrop-blur shadow-sm text-[9px] font-black text-slate-900 border border-slate-100">
                                             {name}
                                         </span>
@@ -380,7 +426,7 @@ export default function ProductList() {
                                 </p>
 
                                 <div className="flex flex-wrap gap-1 mt-3">
-                                    {product.categoryNames.slice(0, 3).map((name, i) => (
+                                    {product.categoryNames.slice(0, 3).map((name: string, i: number) => (
                                         <span key={i} className="text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100 italic">
                                             #{name}
                                         </span>

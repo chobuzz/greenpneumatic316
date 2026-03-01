@@ -28,7 +28,11 @@ export async function GET() {
 
         // Sort categories by order
         const sortedCategories = [...processedCategories].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
-        return NextResponse.json(sortedCategories);
+        return NextResponse.json(sortedCategories, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30'
+            }
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 });
     }

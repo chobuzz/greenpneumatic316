@@ -6,9 +6,14 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowRight, Box, Zap, Pipette, Cylinder, ChevronRight } from "lucide-react"
 import type { BusinessUnit, Category, Product } from "@/lib/db"
-import { Loading } from "@/components/ui/loading"
+import { BusinessUnitsPageSkeleton } from "@/components/business-unit/business-units-skeleton"
 import { UnitHero } from "@/components/business-unit/unit-hero"
-import { BusinessUnitMainContent } from "@/components/business-unit/business-unit-main-content"
+import dynamic from "next/dynamic"
+
+const BusinessUnitMainContent = dynamic(
+    () => import("@/components/business-unit/business-unit-main-content").then(mod => mod.BusinessUnitMainContent),
+    { loading: () => <BusinessUnitsPageSkeleton /> }
+)
 
 function BusinessUnitsContent() {
     const searchParams = useSearchParams()
@@ -110,7 +115,7 @@ function BusinessUnitsContent() {
         router.push(`/business-units?tab=${id}`, { scroll: false })
     }
 
-    if (loading) return <Loading />
+    if (loading) return <BusinessUnitsPageSkeleton />
 
     const currentUnitData = units.find(u => u.id === activeTab)
     if (!currentUnitData) return null
@@ -185,7 +190,7 @@ function BusinessUnitsContent() {
 
 export default function BusinessUnitsPage() {
     return (
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<BusinessUnitsPageSkeleton />}>
             <BusinessUnitsContent />
         </Suspense>
     )

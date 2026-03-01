@@ -59,7 +59,11 @@ export async function GET() {
                 mediaPosition: p.mediaPosition || 'bottom'
             };
         });
-        return NextResponse.json(allProducts);
+        return NextResponse.json(allProducts, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30'
+            }
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
     }

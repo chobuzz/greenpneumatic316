@@ -6,7 +6,11 @@ import { v4 as uuidv4 } from 'uuid';
 export async function GET() {
     try {
         const units = await fetchFromGoogleSheet('businessUnit');
-        return NextResponse.json(units);
+        return NextResponse.json(units, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30'
+            }
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch business units' }, { status: 500 });
     }

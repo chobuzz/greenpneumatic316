@@ -18,6 +18,9 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { FloatingButtons } from "@/components/layout/floating-buttons";
 
+import { ProgressBar } from "@/components/ui/progress-bar";
+import { Suspense } from "react";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,6 +34,9 @@ export default function RootLayout({
           inter.variable
         )}
       >
+        <Suspense fallback={null}>
+          <ProgressBar />
+        </Suspense>
         <Navbar />
         <main className="flex-1 pt-20">{children}</main>
         <Footer />

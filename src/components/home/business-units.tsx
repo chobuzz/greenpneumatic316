@@ -77,3 +77,36 @@ export function BusinessUnits({ units }: BusinessUnitsProps) {
         </section>
     )
 }
+
+import { Skeleton } from "@/components/ui/skeleton"
+
+export function BusinessUnitsSkeleton() {
+    return (
+        <section className="py-32 bg-white relative overflow-hidden">
+            <div className="container px-4 md:px-8">
+                <div className="flex flex-col items-center text-center mb-24">
+                    <Skeleton className="h-8 w-32 rounded-full mb-6" />
+                    <Skeleton className="h-12 w-64 md:w-96 mb-8" />
+                    <Skeleton className="h-16 w-full max-w-2xl" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="rounded-[2.5rem] overflow-hidden flex flex-col h-full bg-slate-50/50">
+                            <Skeleton className="h-72 w-full" />
+                            <div className="p-10 flex-1 flex flex-col pt-8">
+                                <div className="mb-5 flex items-center gap-3">
+                                    <Skeleton className="h-1.5 w-12 rounded-full" />
+                                    <Skeleton className="h-3 w-20" />
+                                </div>
+                                <Skeleton className="h-8 w-3/4 mb-4" />
+                                <Skeleton className="h-20 w-full mb-8" />
+                                <Skeleton className="h-4 w-24" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    )
+}

@@ -134,11 +134,15 @@ export function MediaRenderer({ items }: MediaRendererProps) {
 function ImageCard({ item }: { item: MediaItem }) {
     return (
         <div className="relative w-full overflow-hidden rounded-2xl bg-gray-50 border border-slate-100/50 group">
-            <img
-                src={item.url}
-                alt={item.title || "Product Detail"}
-                className="w-full h-auto object-contain block group-hover:scale-[1.01] transition-transform duration-500"
-            />
+            <div className="relative w-full" style={{ aspectRatio: 'auto', minHeight: '300px' }}>
+                <Image
+                    src={item.url}
+                    alt={item.title || "Product Detail"}
+                    fill
+                    className="object-contain transition-transform duration-500 group-hover:scale-[1.01]"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+                />
+            </div>
             {item.title && (
                 <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md p-3 rounded-xl border border-white/20 shadow-lg animate-in fade-in slide-in-from-bottom-2">
                     <p className="text-sm font-bold text-slate-800">{item.title}</p>

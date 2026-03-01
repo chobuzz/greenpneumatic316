@@ -7,6 +7,8 @@ import Link from "next/link"
 import { ArrowRight, Sparkles } from "lucide-react"
 import { useState, useEffect } from "react"
 
+import Image from "next/image"
+
 const HERO_IMAGES = Array.from({ length: 15 }, (_, i) => `/hero/${i + 1}.png`)
 
 export function Hero() {
@@ -32,9 +34,14 @@ export function Hero() {
                         transition={{ duration: 1.5, ease: "easeOut" }}
                         className="absolute inset-0"
                     >
-                        <div
-                            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                            style={{ backgroundImage: `url(${HERO_IMAGES[currentIndex]})` }}
+                        <Image
+                            src={HERO_IMAGES[currentIndex]}
+                            alt={`Hero Background ${currentIndex + 1}`}
+                            fill
+                            priority={currentIndex === 0}
+                            className="object-cover"
+                            sizes="100vw"
+                            quality={90}
                         />
                     </motion.div>
                 </AnimatePresence>

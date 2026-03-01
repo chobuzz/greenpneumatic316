@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { readDb } from "@/lib/db"
+import { fetchFromGoogleSheet } from "@/lib/sheets"
 import { ProductDetailView } from "@/components/product/product-detail-view"
 import { JsonLd } from "@/components/seo/json-ld"
 
@@ -9,18 +9,50 @@ interface Props {
 }
 
 async function getProductData(id: string) {
-    const db = await readDb()
-    const allProducts = db.businessUnits.flatMap(bu => bu.products || [])
-    const product = allProducts.find(p => p.id === id)
+    const [products, units] = await Promise.all([
+        fetchFromGoogleSheet('product'),
+        fetchFromGoogleSheet('businessUnit')
+    ]) as [any[], any[]];
+
+    const product = products.find(p => p.id === id)
 
     if (!product) return null
 
-    const targetBUId = product.businessUnitIds?.[0] || (product as any).businessUnitId
-    const unit = db.businessUnits.find(u => u.id === targetBUId)
+    const parseField = (field: any) => {
+        if (typeof field === 'string' && (field.startsWith('[') || field.startsWith('{'))) {
+            try { return JSON.parse(field); } catch (e) { return [field]; }
+        }
+        return Array.isArray(field) ? field : (field ? [field] : []);
+    };
+
+    const safeParseJSON = (data: any) => {
+        if (!data || typeof data !== 'string') return data || [];
+        const trimmed = data.trim();
+        if (trimmed === "" || (!trimmed.startsWith('[') && !trimmed.startsWith('{'))) {
+            return trimmed ? [trimmed] : [];
+        }
+        try { return JSON.parse(trimmed); } catch (e) { return []; }
+    };
+
+    const businessUnitIds = parseField(product.businessUnitIds || product.businessUnitId);
+    const targetBUId = businessUnitIds[0] || "";
+    const unit = units.find(u => u.id === targetBUId)
 
     if (!unit) return null
 
-    return { product, unit }
+    const enrichedProduct = {
+        ...product,
+        businessUnitIds,
+        categoryIds: parseField(product.categoryIds || product.categoryId),
+        images: safeParseJSON(product.images),
+        models: safeParseJSON(product.models),
+        optionGroups: safeParseJSON(product.optionGroups || product.options),
+        specImages: safeParseJSON(product.specImages),
+        mediaItems: safeParseJSON(product.mediaItems),
+        mediaPosition: product.mediaPosition || 'bottom'
+    };
+
+    return { product: enrichedProduct, unit }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -58,6 +90,7 @@ export default async function ProductPage({ params }: Props) {
 
     if (!data) {
         notFound()
+        return null // unreachable, but satisfies TS
     }
 
     const { product, unit } = data

@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { readDb } from "@/lib/db"
+import { fetchFromGoogleSheet } from "@/lib/sheets"
 
 interface Props {
     params: Promise<{ id: string }>
@@ -8,8 +8,8 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const id = (await params).id
-    const db = await readDb()
-    const unit = db.businessUnits.find(u => u.id === id)
+    const units = await fetchFromGoogleSheet('businessUnit') as any[]
+    const unit = units.find(u => u.id === id)
 
     if (!unit) return { title: "사업부를 찾을 수 없습니다" }
 

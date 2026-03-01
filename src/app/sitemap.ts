@@ -1,8 +1,12 @@
 import { MetadataRoute } from 'next';
-import { readDb } from '@/lib/db';
+import { fetchFromGoogleSheet } from '@/lib/sheets';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const db = await readDb();
+    const [businessUnits, products] = await Promise.all([
+        fetchFromGoogleSheet('businessUnit'),
+        fetchFromGoogleSheet('product')
+    ]) as [any[], any[]];
+
     const baseUrl = 'https://greenpneumatic.com';
 
     // Static routes
@@ -28,7 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ];
 
     // Dynamic Business Unit routes
-    const businessUnitRoutes: MetadataRoute.Sitemap = db.businessUnits.map((unit) => ({
+    const businessUnitRoutes: MetadataRoute.Sitemap = businessUnits.map((unit) => ({
         url: `${baseUrl}/business-units/${unit.id}`,
         lastModified: new Date(),
         changeFrequency: 'weekly',
@@ -36,10 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     // Dynamic Product routes
-    // products are nested in business units in the DB structure, but accessed via /products/[id]
-    // Let's gather all unique products from all BUs
-    const allProducts = db.businessUnits.flatMap(bu => bu.products || []);
-    const productRoutes: MetadataRoute.Sitemap = allProducts.map((product) => ({
+    const productRoutes: MetadataRoute.Sitemap = products.map((product) => ({
         url: `${baseUrl}/products/${product.id}`,
         lastModified: new Date(),
         changeFrequency: 'weekly',

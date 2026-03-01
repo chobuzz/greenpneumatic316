@@ -6,6 +6,7 @@ import Image from "next/image"
 import Link from "next/link"
 import CategorySelector from "@/components/business-unit/category-selector"
 import type { BusinessUnit, Category, Product } from "@/lib/db"
+import { ExternalLink } from "lucide-react"
 
 interface BusinessUnitMainContentProps {
     unit: BusinessUnit;
@@ -51,10 +52,24 @@ export function BusinessUnitMainContent({ unit, unitCategories }: BusinessUnitMa
                                 transition={{ delay: 0.1 }}
                                 className="lg:col-span-9"
                             >
-                                <h2 className="text-xl font-black text-slate-900 mb-4 flex items-center gap-3">
-                                    <span className="w-1.5 h-6 bg-emerald-500 rounded-full hidden lg:block" />
-                                    사업부 소개
-                                </h2>
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                                    <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
+                                        <span className="w-1.5 h-6 bg-emerald-500 rounded-full hidden lg:block" />
+                                        사업부 소개
+                                    </h2>
+
+                                    {unit.homepageUrl && (
+                                        <a
+                                            href={unit.homepageUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-slate-200"
+                                        >
+                                            <ExternalLink className="h-4 w-4" />
+                                            공식 홈페이지 바로가기
+                                        </a>
+                                    )}
+                                </div>
                                 <p className="text-xl text-slate-900 leading-relaxed font-bold tracking-tight">
                                     {unit.description}
                                 </p>

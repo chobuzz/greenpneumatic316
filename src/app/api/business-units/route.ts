@@ -24,6 +24,7 @@ export async function POST(request: Request) {
             name: body.name,
             description: body.description,
             image: body.image || "/placeholder.png",
+            homepageUrl: body.homepageUrl || "",
             color: body.color || "bg-gray-500"
         };
 

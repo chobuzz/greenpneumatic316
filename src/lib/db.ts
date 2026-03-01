@@ -66,6 +66,7 @@ export interface BusinessUnit {
     description: string;
     image: string;
     bannerImage?: string;
+    homepageUrl?: string; // Add homepage link
     products: Product[];
     order?: number;
     color?: string; // Tailwind color class

@@ -9,7 +9,7 @@ import { useState, useEffect } from "react"
 
 import Image from "next/image"
 
-const HERO_IMAGES = Array.from({ length: 15 }, (_, i) => `/hero/${i + 1}.png`)
+const HERO_IMAGES = Array.from({ length: 3 }, (_, i) => `/hero/${i + 1}.png`)
 
 export function Hero() {
     const [currentIndex, setCurrentIndex] = useState(0)

@@ -17,7 +17,8 @@ export default function EditBusinessUnit() {
     const [formData, setFormData] = useState({
         name: "",
         description: "",
-        image: ""
+        image: "",
+        homepageUrl: ""
     })
 
     const [loading, setLoading] = useState(!isNew)
@@ -34,7 +35,8 @@ export default function EditBusinessUnit() {
                     setFormData({
                         name: data.name,
                         description: data.description,
-                        image: data.image
+                        image: data.image,
+                        homepageUrl: data.homepageUrl || ""
                     })
                     setLoading(false)
                 })
@@ -96,6 +98,16 @@ export default function EditBusinessUnit() {
                         placeholder="사업 분야에 대한 상세 설명을 입력하세요."
                         required
                     />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium mb-1">공식 홈페이지 링크</label>
+                    <Input
+                        value={formData.homepageUrl}
+                        onChange={(e) => setFormData({ ...formData, homepageUrl: e.target.value })}
+                        placeholder="예: https://www.example.com"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">사업부 공식 홈페이지가 있는 경우 입력해주세요.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

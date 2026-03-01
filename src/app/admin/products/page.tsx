@@ -172,34 +172,12 @@ export default function ProductList() {
                         <LayoutGrid className="h-5 w-5 mr-2" /> 대량 등록
                     </Button>
                     <Button
-                        onClick={async () => {
-                            if (!confirm("모든 상품의 외부 이미지를 우리 서버로 다운로드하여 백업하시겠습니까?\n이미지 수에 따라 시간이 다소 소요될 수 있습니다.")) return;
-                            setIsSyncing(true);
-                            try {
-                                const res = await fetch("/api/admin/sync-images", { method: "POST" });
-                                const data = await res.json();
-                                if (data.success) {
-                                    alert(`백업 완료! ${data.message}`);
-                                    window.location.reload();
-                                } else {
-                                    alert(`백업 실패: ${data.error}`);
-                                }
-                            } catch (e) {
-                                alert("통신 오류가 발생했습니다.");
-                            } finally {
-                                setIsSyncing(false);
-                            }
-                        }}
-                        disabled={isSyncing}
+                        disabled={true}
                         variant="outline"
-                        className="h-12 px-6 rounded-xl border-slate-200 font-bold hover:bg-slate-50 transition-all text-emerald-600 hover:text-emerald-700"
+                        className="h-12 px-6 rounded-xl border-slate-200 font-bold bg-slate-50 text-slate-400 cursor-not-allowed"
                     >
-                        {isSyncing ? (
-                            <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-                        ) : (
-                            <Database className="h-5 w-5 mr-2" />
-                        )}
-                        {isSyncing ? "백업 중..." : "이미지 로컬 백업"}
+                        <Database className="h-5 w-5 mr-2" />
+                        이미지 로컬 백업 (비활성화)
                     </Button>
                 </div>
             </div>

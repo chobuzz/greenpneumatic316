@@ -143,6 +143,11 @@ function doGet(e) {
   try {
     const type = e.parameter.type;
     const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // [New] 모든 시트 이름 목록 가져오기
+    if (type === 'sheets_list') {
+      return jsonResponse(ss.getSheets().map(s => s.getName()));
+    }
     
     // A. 고객관리 (복합 시트 매핑)
     if (type === 'customers') {

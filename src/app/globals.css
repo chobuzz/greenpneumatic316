@@ -124,3 +124,13 @@ body {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* 스크롤바 숨김 유틸리티 */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

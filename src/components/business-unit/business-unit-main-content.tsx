@@ -63,7 +63,7 @@ export function BusinessUnitMainContent({ unit, unitCategories }: BusinessUnitMa
                                             href={unit.homepageUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-slate-200"
+                                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-bold hover:bg-emerald-700 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-emerald-200"
                                         >
                                             <ExternalLink className="h-4 w-4" />
                                             공식 홈페이지 바로가기

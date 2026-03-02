@@ -141,23 +141,23 @@ function BusinessUnitsContent() {
 
     return (
         <div className="flex flex-col min-h-screen pt-20">
-            {/* Tab Navigation Navigation */}
+            {/* Tab Navigation */}
             <div className="bg-white border-b border-slate-100 sticky top-[68px] z-30">
-                <div className="container px-4 md:px-8">
-                    <div className="flex items-center justify-center -mb-px overflow-x-auto no-scrollbar py-2">
-                        <div className="flex gap-2 p-1 bg-slate-100/50 rounded-2xl">
+                <div className="w-full overflow-x-auto no-scrollbar">
+                    <div className="flex items-center py-2 px-3 md:px-6 min-w-max md:min-w-0 md:justify-center">
+                        <div className="flex gap-1.5 md:gap-2 p-1 bg-slate-100/50 rounded-2xl">
                             {units.map((unit) => (
                                 <button
                                     key={unit.id}
                                     onClick={() => handleTabChange(unit.id)}
                                     className={`
-                                        flex items-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap
+                                        flex items-center gap-1.5 md:gap-2.5 px-3 py-2 md:px-5 md:py-3 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap
                                         ${activeTab === unit.id
                                             ? "bg-white text-primary shadow-sm ring-1 ring-slate-200"
                                             : "text-slate-500 hover:text-slate-900 hover:bg-white/50"}
                                     `}
                                 >
-                                    <span className={activeTab === unit.id ? "text-primary" : "text-slate-400"}>
+                                    <span className={`${activeTab === unit.id ? "text-primary" : "text-slate-400"} flex-shrink-0`}>
                                         {getUnitIcon(unit.id)}
                                     </span>
                                     {unit.name}

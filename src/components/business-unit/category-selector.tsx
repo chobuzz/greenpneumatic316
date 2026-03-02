@@ -80,31 +80,33 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
             <style jsx>{`
                 /* ─── 대분류 탭 바 ─── */
                 .cs-l1-bar {
-    position: relative;
-    background: #ffffff;
-    border-bottom: 1px solid #f1f5f9;
-    padding: 16px 0;
-    margin-bottom: 0;
+                    position: relative;
+                    background: #ffffff;
+                    border-bottom: 1px solid #f1f5f9;
+                    padding: 12px 0;
+                    margin-bottom: 0;
                 }
                 .cs-l1-inner {
                     max-width: 80rem;
                     margin: 0 auto;
-                    padding: 0 16px;
+                    padding: 0 12px;
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-                    gap: 10px;
+                    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                    gap: 8px;
                 }
                 .cs-l1-tab {
                     background: #fff;
                     border: 1.5px solid #e5e7eb;
-                    border-radius: 14px;
-                    padding: 14px 10px;
+                    border-radius: 12px;
+                    padding: 10px 8px;
                     text-align: center;
                     cursor: pointer;
                     transition: all 0.3s cubic-bezier(.4,0,.2,1);
-                    font-size: 13px;
+                    font-size: 12px;
                     font-weight: 700;
                     color: #64748b;
+                    word-break: keep-all;
+                    line-height: 1.4;
                 }
                 .cs-l1-tab:hover {
                     transform: translateY(-2px);
@@ -124,31 +126,31 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
                 .cs-l2-bar {
                     background: linear-gradient(to bottom, #f0fdf4, #fff);
                     border-bottom: 1px solid #bbf7d0;
-                    padding: 18px 0;
+                    padding: 12px 0;
                     margin-bottom: 0;
                 }
                 .cs-l2-inner {
                     max-width: 80rem;
                     margin: 0 auto;
-                    padding: 0 24px;
+                    padding: 0 12px;
                     display: flex;
                     flex-wrap: wrap;
-                    gap: 10px;
+                    gap: 8px;
                     align-items: center;
                 }
                 .cs-l2-label {
-                    font-size: 12px;
+                    font-size: 11px;
                     font-weight: 800;
                     color: #6b7280;
-                    letter-spacing: 0.08em;
+                    letter-spacing: 0.06em;
                     text-transform: uppercase;
-                    padding-right: 6px;
+                    padding-right: 4px;
                     flex-shrink: 0;
                 }
                 .cs-pill {
-                    padding: 10px 22px;
+                    padding: 7px 14px;
                     border-radius: 99px;
-                    font-size: 14px;
+                    font-size: 13px;
                     font-weight: 600;
                     cursor: pointer;
                     transition: all 0.22s cubic-bezier(.4,0,.2,1);
@@ -156,6 +158,7 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
                     background: #fff;
                     color: #475569;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+                    word-break: keep-all;
                 }
                 .cs-pill:hover {
                     background: #f0fdf4;
@@ -173,7 +176,7 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
 
                 /* ─── 소분류 필 바 ─── */
                 .cs-l3-bar {
-                    padding: 14px 0 18px;
+                    padding: 10px 0 14px;
                     background: #fff;
                     border-bottom: 2px solid #f0fdf4;
                     margin-bottom: 0;
@@ -181,19 +184,19 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
                 .cs-l3-inner {
                     max-width: 80rem;
                     margin: 0 auto;
-                    padding: 0 24px;
+                    padding: 0 12px;
                     display: flex;
                     flex-wrap: wrap;
-                    gap: 8px;
+                    gap: 6px;
                     align-items: center;
                 }
                 .cs-l3-label {
-                    font-size: 12px;
+                    font-size: 11px;
                     font-weight: 800;
                     color: #6b7280;
-                    letter-spacing: 0.08em;
+                    letter-spacing: 0.06em;
                     text-transform: uppercase;
-                    padding-right: 6px;
+                    padding-right: 4px;
                     flex-shrink: 0;
                 }
                 .cs-pill.l3-active {
@@ -207,13 +210,14 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
                 /* ─── 크럼 표시 ─── */
                 .cs-breadcrumb {
                     max-width: 80rem;
-                    margin: 12px auto 0;
-                    padding: 0 16px;
+                    margin: 10px auto 0;
+                    padding: 0 12px;
                     display: flex;
                     align-items: center;
-                    gap: 6px;
-                    font-size: 12px;
+                    gap: 5px;
+                    font-size: 11px;
                     color: #94a3b8;
+                    flex-wrap: wrap;
                 }
                 .cs-breadcrumb .crumb { font-weight: 600; color: #64748b; }
                 .cs-breadcrumb .crumb.active { color: #059669; font-weight: 700; }
@@ -221,35 +225,74 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
                 /* ─── 제품 그리드 ─── */
                 .cs-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-                    gap: 24px;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 14px;
                     transition: max-height 0.6s ease;
+                }
+                @media (min-width: 480px) {
+                    .cs-grid {
+                        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                        gap: 20px;
+                    }
+                }
+                @media (min-width: 768px) {
+                    .cs-grid {
+                        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                        gap: 24px;
+                    }
+                    .cs-l1-inner {
+                        padding: 0 24px;
+                        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+                        gap: 10px;
+                    }
+                    .cs-l1-tab {
+                        font-size: 13px;
+                        padding: 14px 10px;
+                        border-radius: 14px;
+                    }
+                    .cs-l2-inner, .cs-l3-inner {
+                        padding: 0 24px;
+                        gap: 10px;
+                    }
+                    .cs-l2-bar { padding: 18px 0; }
+                    .cs-l3-bar { padding: 14px 0 18px; }
+                    .cs-pill { padding: 10px 22px; font-size: 14px; }
+                    .cs-breadcrumb { padding: 0 16px; font-size: 12px; }
                 }
                 .cs-card {
                     background: #fff;
-                    border-radius: 20px;
-                    padding: 20px;
+                    border-radius: 16px;
+                    padding: 14px;
                     text-align: center;
                     border: 1.5px solid #f1f5f9;
                     transition: all 0.35s ease;
                     text-decoration: none;
                 }
+                @media (min-width: 768px) {
+                    .cs-card {
+                        border-radius: 20px;
+                        padding: 20px;
+                    }
+                }
                 .cs-card:hover {
                     box-shadow: 0 20px 48px rgba(0,0,0,0.07);
-                    transform: translateY(-8px);
+                    transform: translateY(-6px);
                     border-color: #22c55e;
                 }
                 .cs-img-wrap {
                     width: 100%;
                     aspect-ratio: 1;
-                    margin-bottom: 16px;
+                    margin-bottom: 12px;
                     position: relative;
                     background: #f8fafc;
-                    border-radius: 14px;
+                    border-radius: 12px;
                     overflow: hidden;
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                }
+                @media (min-width: 768px) {
+                    .cs-img-wrap { margin-bottom: 16px; border-radius: 14px; }
                 }
                 .cs-nav-wrap {
                     position: relative;

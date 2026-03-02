@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { product, unit } = data
     const title = `${product.name} | ${unit.name} | 그린뉴메틱`
     const description = product.description || `${product.name} 상세 정보 및 견적 안내`
-    const ogImage = product.images?.[0] || '/favicon.ico'
+    const ogImage = product.images?.[0] || '/GN_LOGO.png'
 
     return {
         title,

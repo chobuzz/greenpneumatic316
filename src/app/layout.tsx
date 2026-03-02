@@ -52,9 +52,9 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/favicon.ico',
+    icon: '/GN_LOGO.png',
+    shortcut: '/GN_LOGO.png',
+    apple: '/GN_LOGO.png',
   },
   verification: {
     google: 'your-google-verification-code',
@@ -83,7 +83,7 @@ export default function RootLayout({
     "@type": "Organization",
     "name": "그린뉴메틱 (Green Pneumatic)",
     "url": "https://greenpneumatic.com",
-    "logo": "https://greenpneumatic.com/favicon.ico",
+    "logo": "https://greenpneumatic.com/GN_LOGO.png",
     "contactPoint": {
       "@type": "ContactPoint",
       "telephone": "+82-10-7392-9809",

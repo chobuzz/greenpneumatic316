@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         openGraph: {
             title,
             description,
-            images: [unit.image || '/favicon.ico'],
+            images: [unit.image || '/GN_LOGO.png'],
         },
     }
 }

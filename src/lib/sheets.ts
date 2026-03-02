@@ -112,7 +112,7 @@ export async function fetchFromGoogleSheet(type: SheetEntityType) {
                 "Accept": "application/json",
                 "User-Agent": "Mozilla/5.0 (compatible; GreenPneumaticBot/1.0)"
             },
-            cache: 'no-store',
+            next: { revalidate: 60 }, // ISR: Cache for 60 seconds
             redirect: 'follow'
         })
 

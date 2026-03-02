@@ -57,9 +57,9 @@ export const metadata: Metadata = {
     apple: '/GN_LOGO.png',
   },
   verification: {
-    google: 'your-google-verification-code',
+    google: 'nWT86FupKZ0-eltFUIW7klHnV-yAlamBJeqMefDI8Eo',
     other: {
-      'naver-site-verification': ['your-naver-verification-code'],
+      'naver-site-verification': ['9d45877870ba969c8580b1f6be755d478d4cf0d3'],
     },
   },
 };

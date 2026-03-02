@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "그린뉴메틱 (Green Pneumatic) - 산업 기술의 새로운 기준",
-    description: "실험장비, 콤프레샤, 진공 및 유체시스템 전문 솔루션 제공",
+    description: "실험장비, 콤프레샤, 진공 및 유체시스템 전문 솔루션 제공 ",
     url: 'https://greenpneumatic.com',
     siteName: '그린뉴메틱',
     locale: 'ko_KR',

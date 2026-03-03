@@ -25,7 +25,17 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/center',
+        destination: '/',
+        permanent: true,
+      },
+    ];
+  },
   // output: 'standalone' // ❌ Vercel 배포 시 사용하면 안 됨 (Docker 전용)
+
 };
 
 export default nextConfig;

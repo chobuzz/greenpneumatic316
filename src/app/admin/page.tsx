@@ -24,7 +24,7 @@ export default function AdminDashboard() {
             <div className="mt-8 bg-white p-6 rounded-lg shadow">
                 <h3 className="text-lg font-semibold mb-4">빠른 작업</h3>
                 <div className="flex gap-4">
-                    {/* Add buttons later */}
+                    {/* Add buttons later*/}
                     <p className="text-gray-500">좌측 메뉴를 통해 관리를 시작하세요.</p>
                 </div>
             </div>

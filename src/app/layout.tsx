@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     default: "그린뉴메틱 (Green Pneumatic) - 실험 및 산업 장비 솔루션",
     template: "%s | 그린뉴메틱"
   },
-  description: "실험장비, 콤프레샤, 진공 및 유체시스템 전문 기업 그린뉴메틱입니다. 최상이 기술 지원과 사후 관리를 약속드립니다.",
+  description: "실험장비, 콤프레샤, 진공 및 유체시스템 전문 기업 그린뉴메틱입니다. 최상이 기술 지원과 사후 관리를 약속드립니다. ",
   alternates: {
     canonical: '/',
   },
@@ -72,6 +72,7 @@ import { FloatingButtons } from "@/components/layout/floating-buttons";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { Suspense } from "react";
 import { JsonLd } from "@/components/seo/json-ld";
+import Script from "next/script";
 
 export default function RootLayout({
   children,
@@ -96,6 +97,25 @@ export default function RootLayout({
 
   return (
     <html lang="ko">
+      <head>
+        {/* Google tag (gtag.js) */}
+        <Script
+          strategy="afterInteractive"
+          src={`https://www.googletagmanager.com/gtag/js?id=AW-17991279956`}
+        />
+        <Script
+          id="gtag-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'AW-17991279956');
+            `,
+          }}
+        />
+      </head>
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased flex flex-col",

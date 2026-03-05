@@ -4,12 +4,13 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import type { Category, BusinessUnit } from "@/lib/db"
+import type { Category, BusinessUnit, MediaItem } from "@/lib/db"
 import { Reorder, AnimatePresence, motion } from "framer-motion"
+import { MediaEditor } from "@/components/ui/media-editor"
 
 import {
     Trash2, Plus, Tag, Building2, Layers,
-    ChevronRight, GripVertical, Save, RefreshCw
+    ChevronRight, GripVertical, Save, RefreshCw, Pencil, X, Film
 } from "lucide-react"
 import { Loading } from "@/components/ui/loading"
 
@@ -50,6 +51,84 @@ function getFlatList(categories: CategoryWithUnit[], unitId: string): { cat: Cat
     return result
 }
 
+// 미디어 편집 패널 컴포넌트
+function MediaEditPanel({
+    category,
+    onClose,
+    onSave
+}: {
+    category: CategoryWithUnit
+    onClose: () => void
+    onSave: (categoryId: string, mediaItems: MediaItem[]) => Promise<void>
+}) {
+    const [items, setItems] = useState<MediaItem[]>(category.mediaItems || [])
+    const [saving, setSaving] = useState(false)
+
+    const handleSave = async () => {
+        setSaving(true)
+        try {
+            await onSave(category.id, items)
+            onClose()
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+        >
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-slate-100">
+                {/* 헤더 */}
+                <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                            <Film className="h-4 w-4" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-black text-slate-900">{category.name}</h3>
+                            <p className="text-xs text-slate-400">미디어 / 컨텐츠 관리</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
+                </div>
+
+                {/* MediaEditor */}
+                <div className="flex-1 overflow-y-auto px-8 py-6">
+                    <p className="text-sm text-slate-500 mb-5">
+                        URL (YouTube, 링크 등)이나 이미지를 추가하세요. 해당 카테고리를 선택한 사용자에게 상품 목록 아래에 표시됩니다.
+                    </p>
+                    <MediaEditor value={items} onChange={setItems} />
+                </div>
+
+                {/* 저장 버튼 */}
+                <div className="px-8 py-5 border-t border-slate-100 flex justify-end gap-3">
+                    <Button variant="outline" onClick={onClose} className="rounded-xl px-6">
+                        취소
+                    </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="rounded-xl px-8 bg-slate-900 hover:bg-slate-800 text-white font-bold"
+                    >
+                        <Save className="h-4 w-4 mr-2" />
+                        {saving ? "저장 중..." : "저장"}
+                    </Button>
+                </div>
+            </div>
+        </motion.div>
+    )
+}
+
 export default function CategoryManager() {
     const [categories, setCategories] = useState<CategoryWithUnit[]>([])
     const [units, setUnits] = useState<BusinessUnit[]>([])
@@ -61,6 +140,7 @@ export default function CategoryManager() {
     const [loading, setLoading] = useState(true)
     const [hasChanges, setHasChanges] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
+    const [editMediaCategory, setEditMediaCategory] = useState<CategoryWithUnit | null>(null)
 
     const fetchData = async () => {
         const [catRes, unitRes] = await Promise.all([
@@ -159,10 +239,36 @@ export default function CategoryManager() {
         }
     }
 
+    // 미디어 저장
+    const handleSaveMedia = async (categoryId: string, mediaItems: MediaItem[]) => {
+        const res = await fetch("/api/categories", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: categoryId, mediaItems })
+        });
+        if (!res.ok) throw new Error("저장 실패");
+        // 로컬 상태도 업데이트
+        setCategories(prev => prev.map(c =>
+            c.id === categoryId ? { ...c, mediaItems } : c
+        ));
+    }
+
     if (loading) return <Loading />
 
     return (
         <div className="space-y-10 max-w-6xl relative pb-32">
+            {/* 미디어 편집 모달 */}
+            <AnimatePresence>
+                {editMediaCategory && (
+                    <MediaEditPanel
+                        key={editMediaCategory.id}
+                        category={editMediaCategory}
+                        onClose={() => setEditMediaCategory(null)}
+                        onSave={handleSaveMedia}
+                    />
+                )}
+            </AnimatePresence>
+
             {/* 헤더 */}
             <div>
                 <h1 className="text-3xl font-bold text-slate-900">카테고리 관리</h1>
@@ -178,6 +284,9 @@ export default function CategoryManager() {
                             <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${item.color}`}>{item.label}</span>
                         </div>
                     ))}
+                    <span className="ml-4 flex items-center gap-1.5 text-xs text-slate-400">
+                        <Pencil className="h-3 w-3" /> 버튼으로 각 카테고리의 미디어/컨텐츠 편집 가능
+                    </span>
                 </div>
             </div>
 
@@ -307,11 +416,27 @@ export default function CategoryManager() {
                                                 <GripVertical className="h-4 w-4 text-slate-300 cursor-grab active:cursor-grabbing" />
                                                 <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200">대분류</span>
                                                 <span className="font-black text-slate-900">{parent.name}</span>
+                                                {(parent.mediaItems?.length ?? 0) > 0 && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
+                                                        미디어 {parent.mediaItems!.length}
+                                                    </span>
+                                                )}
                                             </div>
-                                            <button
-                                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
-                                                onClick={() => handleDelete(parent.id)}
-                                            ><Trash2 className="h-4 w-4" /></button>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5 transition-all"
+                                                    onClick={() => setEditMediaCategory(parent)}
+                                                    title="미디어 편집"
+                                                >
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                </button>
+                                                <button
+                                                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                                                    onClick={() => handleDelete(parent.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {/* 중분류 목록 */}
@@ -334,11 +459,25 @@ export default function CategoryManager() {
                                                                     <GripVertical className="h-3 w-3 text-slate-300 cursor-grab active:cursor-grabbing" />
                                                                     <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">중분류</span>
                                                                     <span className="text-sm font-bold text-slate-800">{mid.name}</span>
+                                                                    {(mid.mediaItems?.length ?? 0) > 0 && (
+                                                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
+                                                                            미디어 {mid.mediaItems!.length}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
-                                                                <button
-                                                                    className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
-                                                                    onClick={() => handleDelete(mid.id)}
-                                                                ><Trash2 className="h-3 w-3" /></button>
+                                                                <div className="flex items-center gap-1">
+                                                                    <button
+                                                                        className="p-1 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/5 transition-all"
+                                                                        onClick={() => setEditMediaCategory(mid)}
+                                                                        title="미디어 편집"
+                                                                    >
+                                                                        <Pencil className="h-3 w-3" />
+                                                                    </button>
+                                                                    <button
+                                                                        className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                                                                        onClick={() => handleDelete(mid.id)}
+                                                                    ><Trash2 className="h-3 w-3" /></button>
+                                                                </div>
                                                             </div>
 
                                                             {/* 소분류 목록 */}
@@ -358,8 +497,18 @@ export default function CategoryManager() {
                                                                             >
                                                                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
                                                                                 <span className="text-xs font-semibold text-slate-700">{leaf.name}</span>
+                                                                                {(leaf.mediaItems?.length ?? 0) > 0 && (
+                                                                                    <span className="text-[9px] px-1 rounded-full bg-primary/10 text-primary font-bold">
+                                                                                        {leaf.mediaItems!.length}
+                                                                                    </span>
+                                                                                )}
                                                                                 <button
-                                                                                    className="text-slate-300 hover:text-red-500 transition-all ml-1 opacity-0 group-hover/leaf:opacity-100"
+                                                                                    className="text-slate-300 hover:text-primary transition-all ml-0.5 opacity-0 group-hover/leaf:opacity-100"
+                                                                                    onClick={(e) => { e.stopPropagation(); setEditMediaCategory(leaf); }}
+                                                                                    title="미디어 편집"
+                                                                                ><Pencil className="h-2.5 w-2.5" /></button>
+                                                                                <button
+                                                                                    className="text-slate-300 hover:text-red-500 transition-all opacity-0 group-hover/leaf:opacity-100"
                                                                                     onClick={(e) => { e.stopPropagation(); handleDelete(leaf.id); }}
                                                                                 ><Trash2 className="h-3 w-3" /></button>
                                                                             </Reorder.Item>

@@ -80,6 +80,7 @@ export interface Category {
     icon?: string;
     order?: number;
     parentId?: string;
+    mediaItems?: MediaItem[]; // 카테고리별 미디어 (URL, 이미지 등)
 }
 
 export interface Quotation {

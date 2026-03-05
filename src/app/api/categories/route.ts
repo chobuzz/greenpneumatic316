@@ -19,10 +19,19 @@ export async function GET() {
             const buId = parseField(c.businessUnitId);
             const pId = parseField(c.parentId);
 
+            // mediaItems 파싱 (JSON 문자열 → 배열)
+            let mediaItems = c.mediaItems;
+            if (typeof mediaItems === 'string' && mediaItems.trim() !== '') {
+                try { mediaItems = JSON.parse(mediaItems); } catch (e) { mediaItems = []; }
+            } else if (!Array.isArray(mediaItems)) {
+                mediaItems = [];
+            }
+
             return {
                 ...c,
                 businessUnitId: Array.isArray(buId) ? buId[0] : buId,
-                parentId: Array.isArray(pId) ? pId[0] : pId
+                parentId: Array.isArray(pId) ? pId[0] : pId,
+                mediaItems,
             };
         });
 
@@ -80,5 +89,26 @@ export async function POST(request: Request) {
         return NextResponse.json(newCategory);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to create category' }, { status: 500 });
+    }
+}
+
+export async function PATCH(request: Request) {
+    try {
+        const body = await request.json();
+        const { id, mediaItems } = body;
+
+        if (!id) {
+            return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
+        }
+
+        const updatedCategory = {
+            id,
+            mediaItems: JSON.stringify(mediaItems || []),
+        };
+
+        await syncToGoogleSheet('category', updatedCategory, 'update');
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        return NextResponse.json({ error: 'Failed to update category media' }, { status: 500 });
     }
 }

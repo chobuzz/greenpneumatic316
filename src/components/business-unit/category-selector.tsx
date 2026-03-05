@@ -4,12 +4,99 @@
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Category, Product } from "@/lib/db"
-import { ChevronRight, MessageSquare, ChevronDown } from "lucide-react"
+import { Category, MediaItem, Product } from "@/lib/db"
+import { ChevronRight, MessageSquare, ExternalLink, BookOpen } from "lucide-react"
 
 interface CategorySelectorProps {
     categories: Category[]
     unitProducts: Product[]
+}
+
+// YouTube 영상 ID 추출
+function getYoutubeId(url: string): string | null {
+    try {
+        const parsed = new URL(url)
+        if (parsed.hostname.includes('youtube.com')) return parsed.searchParams.get('v')
+        if (parsed.hostname === 'youtu.be') return parsed.pathname.slice(1)
+    } catch { }
+    return null
+}
+
+// 미디어 렌더 컴포넌트
+function MediaSection({ items }: { items: MediaItem[] }) {
+    if (!items || items.length === 0) return null
+
+    return (
+        <div className="space-y-6">
+            {items.map((item, idx) => {
+                if (item.type === 'youtube') {
+                    const videoId = getYoutubeId(item.url)
+                    if (!videoId) return null
+                    return (
+                        <div key={idx} className="rounded-2xl overflow-hidden border border-slate-100 bg-white shadow-sm">
+                            <div className="aspect-video w-full">
+                                <iframe
+                                    src={`https://www.youtube.com/embed/${videoId}`}
+                                    className="w-full h-full"
+                                    title={item.title || 'YouTube 영상'}
+                                    allowFullScreen
+                                />
+                            </div>
+                            {item.title && (
+                                <div className="px-5 py-3 border-t border-slate-100">
+                                    <p className="font-semibold text-slate-800 text-sm">{item.title}</p>
+                                </div>
+                            )}
+                        </div>
+                    )
+                }
+
+                if (item.type === 'image') {
+                    return (
+                        <div key={idx} className="rounded-2xl overflow-hidden border border-slate-100 bg-white shadow-sm">
+                            <img src={item.url} alt={item.title || ''} className="w-full h-auto block" />
+                            {item.title && (
+                                <div className="px-5 py-3 border-t border-slate-100">
+                                    <p className="font-semibold text-slate-700 text-sm">{item.title}</p>
+                                </div>
+                            )}
+                        </div>
+                    )
+                }
+
+                if (item.type === 'link' || item.type === 'embed') {
+                    return (
+                        <a
+                            key={idx}
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-4 p-5 rounded-2xl border border-slate-200 bg-white hover:border-green-400 hover:shadow-md transition-all group"
+                        >
+                            {item.thumbnail ? (
+                                <div className="w-20 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-slate-100">
+                                    <img src={item.thumbnail} alt="" className="w-full h-full object-cover" />
+                                </div>
+                            ) : (
+                                <div className="w-16 h-16 rounded-xl bg-slate-100 flex-shrink-0 flex items-center justify-center">
+                                    <ExternalLink className="h-6 w-6 text-slate-400" />
+                                </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                                <p className="font-bold text-slate-800 text-sm group-hover:text-green-700 transition-colors truncate">
+                                    {item.title || item.url}
+                                </p>
+                                <p className="text-xs text-slate-400 truncate mt-0.5">{item.url}</p>
+                            </div>
+                            <ExternalLink className="h-4 w-4 text-slate-300 group-hover:text-green-500 flex-shrink-0 transition-colors" />
+                        </a>
+                    )
+                }
+
+                return null
+            })}
+        </div>
+    )
 }
 
 export default function CategorySelector({ categories, unitProducts }: CategorySelectorProps) {
@@ -23,7 +110,6 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
     const [activeL3, setActiveL3] = useState<string>("")   // "" = 전체
     const [isExpanded, setIsExpanded] = useState(false)
     const gridRef = useRef<HTMLDivElement>(null)
-    const [showMoreBtn, setShowMoreBtn] = useState(false)
 
     useEffect(() => {
         if (!activeL1 && level1.length > 0) {
@@ -61,17 +147,16 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
         return pCatIds.some(id => allIds.includes(id)) || allIds.includes(pCatId);
     })
 
-    // useEffect(() => {
-    //     if (gridRef.current) {
-    //         const grid = gridRef.current
-    //         if (grid.scrollHeight > 500) {
-    //             setShowMoreBtn(true)
-    //         } else {
-    //             setShowMoreBtn(false)
-    //         }
-    //         grid.style.maxHeight = isExpanded ? "5000px" : "500px"
-    //     }
-    // }, [activeL1, activeL2, activeL3, isExpanded])
+    // 현재 선택된(가장 구체적인) 카테고리의 mediaItems
+    const getActiveMediaItems = (): MediaItem[] => {
+        const tryId = activeL3 || activeL2 || activeL1
+        if (!tryId) return []
+        const cat = sortedAll.find(c => c.id === tryId)
+        return cat?.mediaItems || []
+    }
+
+    const activeMediaItems = getActiveMediaItems()
+    const hasMedia = activeMediaItems.length > 0
 
     if (level1.length === 0) return null
 
@@ -454,17 +539,22 @@ export default function CategorySelector({ categories, unitProducts }: CategoryS
                     )}
                 </div>
 
-                {/* {showMoreBtn && (
-                    <div className="text-center mt-10">
-                        <button
-                            className="inline-flex items-center gap-2 px-8 py-3 rounded-full border-2 border-slate-200 bg-white text-slate-700 font-bold hover:bg-green-600 hover:text-white hover:border-green-600 transition-all text-sm"
-                            onClick={() => setIsExpanded(!isExpanded)}
-                        >
-                            {isExpanded ? "접기" : "제품 더보기"}
-                            <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                        </button>
+                {/* 카테고리 미디어 컨텐츠 섹션 */}
+                {hasMedia && (
+                    <div className="mt-12">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="flex-1 h-px bg-slate-100" />
+                            <span className="flex items-center gap-2 px-5 py-1.5 rounded-full bg-green-50 border border-green-200 text-green-700 font-bold text-xs">
+                                <BookOpen className="h-3.5 w-3.5" />
+                                카테고리 컨텐츠
+                            </span>
+                            <div className="flex-1 h-px bg-slate-100" />
+                        </div>
+                        <div className="max-w-3xl mx-auto pb-8">
+                            <MediaSection items={activeMediaItems} />
+                        </div>
                     </div>
-                )} */}
+                )}
             </div>
         </div>
     )

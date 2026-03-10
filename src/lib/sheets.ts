@@ -3,7 +3,7 @@
  * Google Spreadsheet Synchronization Utility
  */
 
-export type SheetEntityType = 'businessUnit' | 'category' | 'product' | 'insight' | 'emailSettings' | 'quotation' | 'inquiry' | 'customers' | 'unsubscribe';
+export type SheetEntityType = 'businessUnit' | 'category' | 'product' | 'insight' | 'emailSettings' | 'quotation' | 'inquiry' | 'customers' | 'unsubscribe' | 'pageView';
 
 export async function syncToGoogleSheet(
     type: SheetEntityType,
@@ -97,7 +97,7 @@ function mapKoreanToEnglish(type: SheetEntityType, row: any): any {
     return row
 }
 
-export async function fetchFromGoogleSheet(type: SheetEntityType) {
+export async function fetchFromGoogleSheet(type: SheetEntityType, noStore: boolean = false) {
     const scriptUrl = process.env.GOOGLE_SCRIPT_URL
 
     if (!scriptUrl || scriptUrl === "your-script-url-here") {
@@ -106,15 +106,22 @@ export async function fetchFromGoogleSheet(type: SheetEntityType) {
     }
 
     try {
-        const response = await fetch(`${scriptUrl}?type=${type}`, {
+        const fetchOptions: RequestInit = {
             method: "GET",
             headers: {
                 "Accept": "application/json",
                 "User-Agent": "Mozilla/5.0 (compatible; GreenPneumaticBot/1.0)"
             },
-            next: { revalidate: 60 }, // ISR: Cache for 60 seconds
             redirect: 'follow'
-        })
+        };
+
+        if (noStore) {
+            fetchOptions.cache = "no-store";
+        } else {
+            fetchOptions.next = { revalidate: 60 }; // ISR: Cache for 60 seconds
+        }
+
+        const response = await fetch(`${scriptUrl}?type=${type}`, fetchOptions)
 
         if (!response.ok) {
             console.error(`❌ [Sheets] HTTP 오류! 상태코드: ${response.status}`)

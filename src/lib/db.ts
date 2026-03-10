@@ -46,6 +46,8 @@ export interface Product {
     specImages?: string[]; // Multiple detail/catalog images
     mediaItems?: MediaItem[]; // Rich media embeds
     mediaPosition?: 'top' | 'bottom'; // Position of media relative to spec images
+    views?: number; // Total page views
+    quoteClicks?: number; // Total clicks on quotation button
 }
 
 export interface Inquiry {

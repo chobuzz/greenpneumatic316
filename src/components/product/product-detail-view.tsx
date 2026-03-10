@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -25,6 +25,15 @@ export function ProductDetailView({ product, unit }: ProductDetailViewProps) {
     const [quantity, setQuantity] = useState(1)
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false)
     const [activeImageIndex, setActiveImageIndex] = useState(0)
+
+    useEffect(() => {
+        if (!product?.id) return;
+        fetch(`/api/products/${product.id}/metrics`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'view' }),
+        }).catch(err => console.error('Failed to increment view metric:', err));
+    }, [product?.id]);
 
     const allImages = (product.images || []).filter(img => typeof img === 'string' && img.trim() !== "")
 
@@ -318,6 +327,14 @@ export function ProductDetailView({ product, unit }: ProductDetailViewProps) {
                                                 alert(`필수 옵션을 선택해주세요:\n${missingRequired.map(g => `• ${g.name}`).join("\n")}`);
                                                 return;
                                             }
+
+                                            // 방문자 견적 클릭 추적
+                                            fetch(`/api/products/${product.id}/metrics`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ type: 'quoteClick' }),
+                                            }).catch(err => console.error('Failed to increment quoteClick metric:', err));
+
                                             setIsQuoteModalOpen(true);
                                         }
                                     }}

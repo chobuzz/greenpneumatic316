@@ -411,6 +411,17 @@ export default function ProductList() {
                                         </span>
                                     ))}
                                 </div>
+
+                                <div className="flex items-center gap-3 pt-2 mt-auto">
+                                    <div className="flex items-center gap-1.5 text-slate-500" title="상세 페이지 조회수">
+                                        <div className="h-5 w-5 bg-slate-100 rounded flex items-center justify-center text-[11px]">👁️</div>
+                                        <span className="text-xs font-black">{product.views || 0}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-slate-500" title="견적 받기 버튼 클릭 수">
+                                        <div className="h-5 w-5 bg-primary/10 rounded flex items-center justify-center text-[11px]">📄</div>
+                                        <span className="text-xs font-black">{product.quoteClicks || 0}</span>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-50">

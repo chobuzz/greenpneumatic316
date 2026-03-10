@@ -73,6 +73,7 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import { Suspense } from "react";
 import { JsonLd } from "@/components/seo/json-ld";
 import Script from "next/script";
+import { PageViewTracker } from "@/components/page-view-tracker";
 
 export default function RootLayout({
   children,
@@ -122,6 +123,7 @@ export default function RootLayout({
           inter.variable
         )}
       >
+        <PageViewTracker />
         <JsonLd data={organizationJsonLd} />
         <Suspense fallback={null}>
           <ProgressBar />
